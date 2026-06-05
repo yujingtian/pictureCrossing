@@ -1,0 +1,133 @@
+{
+  "project": "AI_TryOn_Backend",
+  "version": "1.0",
+  "description": "AI 试戴间后端开发任务拆分 - 简化版（核心功能，无 Redis/OSS）",
+  "instructions": "请按顺序从 step 1 到 step 12 逐个提交，确保前一步无报错再进行下一步。",
+  "commits": [
+    {
+      "step": 1,
+      "title": "init_backend_directory",
+      "description": "创建后端目录结构和基础配置文件",
+      "files_to_create_or_modify": [
+        "backend/.gitignore",
+        "backend/requirements.txt",
+        "backend/.env.example",
+        "backend/app/__init__.py",
+        "backend/app/api/__init__.py",
+        "backend/app/services/__init__.py",
+        "backend/app/core/__init__.py"
+      ],
+      "ai_prompt": "创建后端项目的基础目录结构：1. backend/.gitignore - 忽略 __pycache__, .venv, .env, uploads/, results/, data/*.sqlite, *.pyc 等；2. backend/requirements.txt - 包含 fastapi, uvicorn, sqlalchemy, python-multipart, pillow, pydantic, pydantic-settings, python-dotenv, slowapi, limits；3. backend/.env.example - 环境变量模板；4. 所有必要的 __init__.py 空文件"
+    },
+    {
+      "step": 2,
+      "title": "add_config_module",
+      "description": "添加全局配置管理模块",
+      "files_to_create_or_modify": [
+        "backend/app/config.py"
+      ],
+      "ai_prompt": "创建 backend/app/config.py：使用 pydantic_settings 实现 Settings 类，包含数据库、上传目录、速率限制、AI 服务配置（mock/stable_diffusion/volcengine）和 CORS，提供 lru_cache 装饰的 get_settings() 工厂函数"
+    },
+    {
+      "step": 3,
+      "title": "setup_database_models",
+      "description": "配置数据库连接和 SQLAlchemy ORM 模型",
+      "files_to_create_or_modify": [
+        "backend/app/database.py",
+        "backend/app/models.py"
+      ],
+      "ai_prompt": "1. 创建 backend/app/models.py：定义 TaskStatus 枚举，以及 PresetAccessory, PresetModel, PresetScene, GenerationTask 四个 SQLAlchemy 模型，包含 mask_url 和 prompt 字段；2. 创建 backend/app/database.py：配置启用 WAL 模式的 SQLite engine，实现 get_db() 依赖注入、init_db() 初始化数据库、reset_stuck_tasks() 清理卡住的任务"
+    },
+    {
+      "step": 4,
+      "title": "create_pydantic_schemas",
+      "description": "创建 API 请求/响应的 Pydantic 校验模型",
+      "files_to_create_or_modify": [
+        "backend/app/schemas.py"
+      ],
+      "ai_prompt": "创建 backend/app/schemas.py：包含预设资源响应模型（AccessoryResponse, ModelResponse, SceneResponse）、上传响应（UploadResponse）、AI 生成的输入输出（AccessoryInput, ModelInput, SceneInput, GenerateOptions, CreateGenerationRequest, CreateGenerationResponse, TaskStatusResponse），以及通用 ApiResponse；注意 ModelInput 包含 mask_url 字段"
+    },
+    {
+      "step": 5,
+      "title": "implement_local_storage",
+      "description": "实现本地文件存储服务（含缩略图生成）",
+      "files_to_create_or_modify": [
+        "backend/app/services/storage.py"
+      ],
+      "ai_prompt": "创建 backend/app/services/storage.py：定义 BaseStorageService 基类，实现 LocalStorageService（将文件保存到本地 uploads/results 目录并生成缩略图），提供 get_storage_service() 工厂函数"
+    },
+    {
+      "step": 6,
+      "title": "add_mask_service",
+      "description": "实现基于 Pillow 的遮罩生成服务",
+      "files_to_create_or_modify": [
+        "backend/app/services/mask_service.py"
+      ],
+      "ai_prompt": "创建 backend/app/services/mask_service.py：实现 MaskService 类，包含 generate_wrist_mask（生成椭圆遮罩并高斯模糊羽化）和 generate_mask_from_bbox 两个静态方法"
+    },
+    {
+      "step": 7,
+      "title": "implement_ai_service",
+      "description": "实现 AI 服务基类和 Mock 服务",
+      "files_to_create_or_modify": [
+        "backend/app/services/ai_service.py"
+      ],
+      "ai_prompt": "创建 backend/app/services/ai_service.py：1. 定义 BaseAIService 基类和 generate_inpainting 方法签名，实现 build_prompt 组合提示词；2. 实现 MockAIService（读取占位图或生成纯色图返回）；3. 预留 StableDiffusionAIService 和 VolcengineAIService 位置；4. 实现 get_ai_service() 工厂函数根据配置返回对应服务"
+    },
+    {
+      "step": 8,
+      "title": "add_rate_limiter",
+      "description": "集成 slowapi 实现接口速率限制",
+      "files_to_create_or_modify": [
+        "backend/app/services/rate_limiter.py",
+        "backend/app/dependencies.py"
+      ],
+      "ai_prompt": "1. 创建 backend/app/services/rate_limiter.py：实例化 slowapi.Limiter 并实现异常处理器；2. 创建 backend/app/dependencies.py：提供 check_rate_limit 依赖注入函数"
+    },
+    {
+      "step": 9,
+      "title": "implement_task_queue",
+      "description": "实现基于内存的异步任务队列",
+      "files_to_create_or_modify": [
+        "backend/app/services/task_queue.py"
+      ],
+      "ai_prompt": "创建 backend/app/services/task_queue.py：实现 BaseTaskQueue 基类和 MemoryTaskQueue（使用 threading 和 dict 在内存中管理任务，包含完整的任务执行流程：调用 AI 服务、更新数据库、保存结果），提供 get_task_queue() 工厂函数"
+    },
+    {
+      "step": 10,
+      "title": "create_presets_upload_api",
+      "description": "实现预设资源查询和文件上传接口",
+      "files_to_create_or_modify": [
+        "backend/app/api/presets.py",
+        "backend/app/api/upload.py"
+      ],
+      "ai_prompt": "1. 创建 backend/app/api/presets.py：实现 GET /accessories, /models, /scenes 三个接口，支持查询参数过滤并返回 Pydantic 格式化数据；2. 创建 backend/app/api/upload.py：实现 POST /upload 接口用于文件上传"
+    },
+    {
+      "step": 11,
+      "title": "create_generate_api",
+      "description": "实现核心的 AI 生成任务提交和状态查询接口",
+      "files_to_create_or_modify": [
+        "backend/app/api/generate.py"
+      ],
+      "ai_prompt": "创建 backend/app/api/generate.py：1. 实现 POST /generate 接口，使用 @limiter.limit 装饰器接入速率限制，接收参数调用 task_queue.create_task 压入队列并返回 task_id；2. 实现 GET /{task_id} 接口，根据 task_id 查询任务当前状态"
+    },
+    {
+      "step": 12,
+      "title": "setup_init_data_and_main",
+      "description": "添加初始化数据脚本和 FastAPI 主入口",
+      "files_to_create_or_modify": [
+        "backend/app/core/init_data.py",
+        "backend/main.py",
+        "backend/data/placeholder.jpg",
+        "backend/.env"
+      ],
+      "ai_prompt": "1. 创建 backend/app/core/init_data.py：提供 DEFAULT_DATA 字典，实现 ensure_initial_data() 将预设数据写入数据库；2. 创建 backend/main.py：配置 FastAPI 应用，挂载 CORS 中间件和限流异常处理，挂载 uploads/results 静态文件目录，注册三个 router，在 startup 事件中初始化数据库、重置卡住的任务、写入预设数据；3. 创建 backend/.env 文件（基于 .env.example）；4. 创建 data/placeholder.jpg（可用 Pillow 生成纯色图）"
+    }
+  ],
+  "notes": [
+    "已简化：移除 Redis、OSS 等高级功能，专注核心流程",
+    "AI 服务可在 Mock/Stable Diffusion/火山引擎 间切换",
+    "每个 Commit 完成后建议访问 /docs 测试"
+  ]
+}
