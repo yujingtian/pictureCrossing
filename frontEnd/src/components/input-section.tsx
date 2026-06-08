@@ -13,6 +13,7 @@ interface StepCardProps {
   subtitle: string
   badge?: string
   hasContent?: boolean
+  imageUrl?: string | null
   onClick?: () => void
 }
 
@@ -22,6 +23,7 @@ function StepCard({
   subtitle,
   badge,
   hasContent,
+  imageUrl,
   onClick
 }: StepCardProps) {
   return (
@@ -37,12 +39,19 @@ function StepCard({
         hasContent && "border-primary/30 bg-primary/5 shadow-soft-lg"
       )}
     >
-      {/* 步骤编号 */}
+      {/* 步骤编号 / 预览图 */}
       <div className={cn(
-        "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+        "w-10 h-10 overflow-hidden flex items-center justify-center flex-shrink-0",
+        imageUrl ? "rounded-xl bg-secondary" : "rounded-full",
         hasContent ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
       )}>
-        {hasContent ? (
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+        ) : hasContent ? (
           <Check className="w-5 h-5" />
         ) : (
           <span className="text-sm font-semibold">{step}</span>
@@ -78,12 +87,16 @@ interface InputSectionProps {
     accessory: boolean
     model: boolean
   }
+  accessoryImage?: string | null
+  modelImage?: string | null
   accessoryType?: AccessoryType
 }
 
 export function InputSection({
   onStepSelect,
   uploadedItems = { accessory: false, model: false },
+  accessoryImage,
+  modelImage,
   accessoryType = 'bracelet'
 }: InputSectionProps) {
   const typeInfo = accessoryTypeLabels[accessoryType]
@@ -97,6 +110,7 @@ export function InputSection({
           subtitle={uploadedItems.accessory ? typeInfo.name : "选择手绳款式"}
           badge={uploadedItems.accessory ? `${typeInfo.icon} ${typeInfo.name}` : undefined}
           hasContent={uploadedItems.accessory}
+          imageUrl={accessoryImage}
           onClick={() => onStepSelect?.(1)}
         />
         <StepCard
@@ -104,6 +118,7 @@ export function InputSection({
           title="选模特"
           subtitle="选择任意模特或上传"
           hasContent={uploadedItems.model}
+          imageUrl={modelImage}
           onClick={() => onStepSelect?.(2)}
         />
       </div>

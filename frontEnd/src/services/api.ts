@@ -9,13 +9,36 @@ import type {
   ApiResponse,
 } from '@/types/api'
 
-const API_BASE = ''
+function getErrorMessage(data: unknown, fallback: string) {
+  if (!data || typeof data !== 'object') return fallback
+
+  const record = data as Record<string, unknown>
+  const error = record.error
+  const message = record.message
+  const detail = record.detail
+
+  if (typeof error === 'string' && error) return error
+  if (typeof message === 'string' && message) return message
+  if (typeof detail === 'string' && detail) return detail
+
+  return fallback
+}
 
 async function handleResponse<T>(response: Response): Promise<T> {
   const data = await response.json()
+  const errorMessage = getErrorMessage(data, `HTTP ${response.status}`)
+
   if (!response.ok) {
-    throw new Error(data.message || `HTTP ${response.status}`)
+    throw new Error(errorMessage)
   }
+
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>
+    if (record.success === false || (typeof record.error === 'string' && record.error)) {
+      throw new Error(errorMessage)
+    }
+  }
+
   return data
 }
 

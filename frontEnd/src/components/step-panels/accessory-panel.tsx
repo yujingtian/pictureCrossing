@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { getPresetAccessories, uploadImage } from '@/services/api'
+import { useToast } from '@/hooks/use-toast'
 import type { AccessoryResponse } from '@/types/api'
 
 // 配饰类型定义
@@ -43,6 +44,7 @@ export function AccessoryPanel({
   selectedType: initialType,
   selectedImage,
 }: AccessoryPanelProps) {
+  const { toast } = useToast()
   const [currentType, setCurrentType] = useState<AccessoryType>(initialType || 'bracelet')
   const [selected, setSelected] = useState<string | null>(selectedImage || null)
   const [presets, setPresets] = useState<AccessoryResponse[]>([])
@@ -74,6 +76,11 @@ export function AccessoryPanel({
       }
     } catch (error) {
       console.error('上传图片失败', error)
+      toast({
+        title: '上传图片失败',
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: 'destructive',
+      })
     } finally {
       setUploading(false)
       // 清空 input 以便可以再次选择同一个文件
@@ -95,12 +102,17 @@ export function AccessoryPanel({
         }
       } catch (error) {
         console.error('获取配饰预设失败', error)
+        toast({
+          title: '获取配饰预设失败',
+          description: error instanceof Error ? error.message : '请稍后重试',
+          variant: 'destructive',
+        })
       } finally {
         setLoading(false)
       }
     }
     fetchPresets()
-  }, [open, currentType])
+  }, [open, currentType, toast])
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -174,6 +186,24 @@ export function AccessoryPanel({
               </button>
             </div>
           </div>
+
+          {selected && (
+            <div className="mb-4">
+              <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
+              <div className="relative w-24 aspect-square rounded-xl overflow-hidden border-2 border-primary shadow-soft-lg">
+                <img
+                  src={selected}
+                  alt="当前选择的配饰"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 预设款式 */}
           <div>

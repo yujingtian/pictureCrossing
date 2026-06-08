@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { getPresetScenes } from '@/services/api'
+import { useToast } from '@/hooks/use-toast'
 import type { SceneResponse } from '@/types/api'
 
 interface ScenePanelProps {
@@ -35,6 +36,7 @@ const lightingOptions = [
 ]
 
 export function ScenePanel({ open, onOpenChange, onConfirm, selectedScene }: ScenePanelProps) {
+  const { toast } = useToast()
   const [activeCategory, setActiveCategory] = useState('cafe')
   const [selected, setSelected] = useState<string | null>(selectedScene || null)
   const [selectedLighting, setSelectedLighting] = useState<string>('natural')
@@ -53,12 +55,17 @@ export function ScenePanel({ open, onOpenChange, onConfirm, selectedScene }: Sce
         }
       } catch (error) {
         console.error('获取场景预设失败', error)
+        toast({
+          title: '获取场景预设失败',
+          description: error instanceof Error ? error.message : '请稍后重试',
+          variant: 'destructive',
+        })
       } finally {
         setLoading(false)
       }
     }
     fetchPresets()
-  }, [open, activeCategory])
+  }, [open, activeCategory, toast])
 
   const filteredScenes = presets.filter(s => s.category === activeCategory)
 

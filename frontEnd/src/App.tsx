@@ -36,7 +36,6 @@ export default function App() {
 
   // 生成状态
   const [isLoading, setIsLoading] = useState(false)
-  const [taskId, setTaskId] = useState<string | null>(null)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
 
   // 轮询相关
@@ -101,7 +100,6 @@ export default function App() {
 
     setIsLoading(true)
     setGeneratedImage(null)
-    setTaskId(null)
     clearPolling()
 
     try {
@@ -117,7 +115,6 @@ export default function App() {
       }
 
       const newTaskId = response.data.task_id
-      setTaskId(newTaskId)
 
       // 开始轮询任务状态
       let pollCount = 0
@@ -132,7 +129,7 @@ export default function App() {
 
             if (taskStatus.status === 'completed') {
               // 任务完成
-              setGeneratedImage(taskStatus.result_url)
+              setGeneratedImage(taskStatus.result_url || null)
               setIsLoading(false)
               clearPolling()
               toast({ title: '生成成功！', description: '您的试戴效果图已生成' })
@@ -161,6 +158,13 @@ export default function App() {
           }
         } catch (error) {
           console.error('轮询任务状态失败', error)
+          setIsLoading(false)
+          clearPolling()
+          toast({
+            title: '获取任务状态失败',
+            description: error instanceof Error ? error.message : '请稍后重试',
+            variant: 'destructive',
+          })
         }
       }, 1500)
 
@@ -194,6 +198,8 @@ export default function App() {
         <InputSection
           onStepSelect={handleStepSelect}
           uploadedItems={uploadedItems}
+          accessoryImage={selectedAccessory?.url}
+          modelImage={selectedModel?.url}
           accessoryType={selectedAccessoryType}
         />
 
