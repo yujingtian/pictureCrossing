@@ -43,6 +43,7 @@ class TaskQueue:
                     accessory: dict, model: dict, scene: dict = None,
                     options: dict = None) -> str:
         task_id = f"task_{uuid.uuid4().hex[:16]}"
+        options = options or {}
 
         task = GenerationTask(
             id=task_id,
@@ -56,7 +57,7 @@ class TaskQueue:
             model_url=model.get("url"),
             model_mask_url=model.get("mask_url"),
             scene_id=scene.get("id") if scene else None,
-            lighting=options.get("lighting", "natural") if options else "natural"
+            lighting=options.get("lighting", "natural")
         )
         db.add(task)
         db.commit()
@@ -66,7 +67,12 @@ class TaskQueue:
                 "status": "pending",
                 "progress": 0,
                 "result_url": None,
-                "error": None
+                "error": None,
+                "options": {
+                    "prompt": options.get("prompt"),
+                    "strength": options.get("strength", 0.75),
+                    "guidance_scale": options.get("guidance_scale", 7.5),
+                }
             }
 
         return task_id
@@ -87,6 +93,13 @@ class TaskQueue:
     def _execute_task(self, task_id: str):
         db = SessionLocal()
         try:
+            with self.lock:
+                task_options = self.tasks.get(task_id, {}).get("options", {}).copy()
+
+            custom_prompt = (task_options.get("prompt") or "").strip()
+            strength = task_options.get("strength", 0.75)
+            guidance_scale = task_options.get("guidance_scale", 7.5)
+
             task = db.query(GenerationTask).filter_by(id=task_id).first()
             if not task:
                 return
@@ -121,6 +134,9 @@ class TaskQueue:
                 scene_template,
                 task.lighting
             )
+            if custom_prompt:
+                prompt = f"{prompt}\n用户补充要求：{custom_prompt}"
+            print(f"[AI Prompt][{task_id}]\n{prompt}\n")
             task.prompt = prompt
             db.commit()
 
@@ -136,7 +152,8 @@ class TaskQueue:
                 base_image_url=model_url,
                 accessory_image_url=accessory_url,
                 prompt=prompt,
-                strength=0.75
+                strength=strength,
+                guidance_scale=guidance_scale
             )
 
             result_url = self.storage.save_result(image_data, task_id)

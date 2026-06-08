@@ -9,4 +9,4 @@ python-dotenv>=1.0.0
 slowapi>=0.1.9
 limits>=3.7.0
 requests>=2.31.0
-dashscope>=1.20.0
+dashscope>=1.25.15

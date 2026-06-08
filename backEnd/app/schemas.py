@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -59,8 +59,8 @@ class SceneInput(BaseModel):
 class GenerateOptions(BaseModel):
     lighting: str = "natural"
     prompt: Optional[str] = None
-    strength: float = 0.75
-    guidance_scale: float = 7.5
+    strength: float = Field(default=0.75, ge=0.0, le=1.0)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=30.0)
 
 
 class CreateGenerationRequest(BaseModel):

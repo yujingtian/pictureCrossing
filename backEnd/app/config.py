@@ -20,12 +20,12 @@ class Settings(BaseSettings):
     ai_provider: Literal["mock", "stable_diffusion", "bailian"] = "mock"
     # 阿里百炼配置
     bailian_api_key: str = ""
-    bailian_model: str = "wanx2.7-image-pro"
+    bailian_model: str = "wan2.7-image-pro"
+    bailian_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
     # Stable Diffusion 配置
     stable_diffusion_api_url: str = "http://localhost:7860"
 
-    # 公网可访问的服务基址，用于将本地图片暴露给百炼等远程服务
-    # 例如：http://your-domain.com 或 http://公网IP:8000
+    # 兼容旧配置，ImageGeneration.call 已改用 Base64 输入，不再依赖公网图片地址
     public_base_url: str = ""
 
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
