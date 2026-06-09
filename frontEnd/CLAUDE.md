@@ -118,4 +118,11 @@ type AccessoryType = 'bracelet' | 'necklace' | 'earring' | 'ring'
 
 ## 当前状态
 
-应用是一个原型，使用模拟数据生成（2.5 秒延迟）。实际的 AI 图像生成集成尚未实现。
+应用已接入后端 API：预设数据、图片上传、生成任务创建和任务状态轮询均通过 `/api/...` 调用后端。
+
+生成链路由后端 `AI_PROVIDER` 决定：
+- `mock`：返回占位图，适合本地开发；
+- `stable_diffusion`：调用本地 Stable Diffusion WebUI；
+- `bailian`：调用阿里百炼 `wan2.7-image-pro`。
+
+上传接口返回 `url` 和 `thumbnail_url`：前端预览可使用 `thumbnail_url`，提交生成任务必须使用 `url` 原图。

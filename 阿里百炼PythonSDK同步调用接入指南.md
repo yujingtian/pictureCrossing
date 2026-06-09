@@ -147,7 +147,7 @@ for i, choice in enumerate(rsp.output.choices):
 当前后端封装在 `backEnd/app/services/ai/bailian.py`：
 
 - `_download_image(...)`：读取远程 URL、本地相对路径或 `file://` 图片；
-- `_image_data_to_data_url(...)`：转成 `data:image/jpeg;base64,...`；
+- `_image_data_to_data_url(...)`：按原图格式转成 `data:{MIME_type};base64,...`，并应用 EXIF 方向；
 - `_build_messages(...)`：构建 `Message(role="user", content=[...])`；
 - `generate_image(...)`：调用 `ImageGeneration.call(...)` 并下载结果图。
 
@@ -236,6 +236,6 @@ if rsp.status_code != 200:
 
 - 同步调用会阻塞当前执行线程，建议放在后台任务队列或 worker 中执行，不要直接阻塞 FastAPI 请求线程太久。
 - 生成结果 URL 通常有 24 小时有效期，业务需要及时下载并保存到自己的存储。
-- 当前项目统一把输入图片转成 JPEG Base64 data URL；如需保留 PNG/WEBP 原格式，可后续按 MIME 类型扩展。
+- 当前项目会尽量保留 JPEG/PNG/BMP/WEBP 原图格式并转成 Base64 data URL；MPO 会取首帧转 JPEG，并会应用 EXIF 方向避免手机照片旋转/颠倒。
 - API Key、地域 base URL、模型名等都应配置化，避免硬编码。
 - 生产环境建议记录调用耗时、失败 code/message、request_id、任务 ID，便于追踪问题。
