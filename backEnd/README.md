@@ -127,7 +127,7 @@ Content-Type: multipart/form-data
 }
 ```
 
-`thumbnail_url` 仅用于前端预览；生成时使用 `url` 原图。
+`thumbnail_url` 仅用于前端预览；生成时使用 `url` 原图。上传大小受 `MAX_UPLOAD_SIZE` 配置限制，默认 10MB。
 
 ### 创建生成任务
 
@@ -142,11 +142,11 @@ Content-Type: application/json
 {
   "accessory_type": "bracelet",
   "accessory": {
-    "source": "custom",
+    "source": "upload",
     "url": "/uploads/accessory_xxx.png"
   },
   "model": {
-    "source": "custom",
+    "source": "upload",
     "url": "/uploads/model_xxx.jpg"
   },
   "scene": {
@@ -160,6 +160,11 @@ Content-Type: application/json
   }
 }
 ```
+
+请求中的资源来源说明：
+
+- `source: "preset"`：推荐传 `id`，后端会按预设 ID 查询图片和名称；
+- `source: "upload"`：必须传上传接口返回的原图 `url`。
 
 返回：
 
@@ -230,6 +235,7 @@ rsp = ImageGeneration.call(
 当前任务队列是进程内内存队列：
 
 - 服务重启后，内存中的 pending 状态不会恢复；
+- 查询任务状态时会优先读取内存状态，内存中不存在时会回退查询 DB 中已有任务；
 - 启动时会把 DB 中 `PROCESSING` 状态的任务重置为 `FAILED`；
 - 适合当前单机开发/原型阶段。
 

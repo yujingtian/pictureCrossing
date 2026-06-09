@@ -13,8 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { getPresetModels, uploadImage } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
-import type { ModelResponse } from '@/types/api'
-import { AccessoryType } from './accessory-panel'
+import type { AccessoryType, ModelInput, ModelResponse } from '@/types/api'
 
 // 模特分类定义
 interface ModelCategory {
@@ -36,8 +35,9 @@ const recommendedCategoryByType: Record<AccessoryType, string> = {
 interface ModelPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (imageUrl: string | null) => void
+  onConfirm: (selection: ModelInput | null) => void
   selectedImage?: string | null
+  selectedSelection?: ModelInput | null
   accessoryType?: AccessoryType
 }
 
@@ -46,10 +46,13 @@ export function ModelPanel({
   onOpenChange,
   onConfirm,
   selectedImage,
+  selectedSelection,
   accessoryType = 'bracelet',
 }: ModelPanelProps) {
   const { toast } = useToast()
-  const [selected, setSelected] = useState<string | null>(selectedImage || null)
+  const [selected, setSelected] = useState<ModelInput | null>(
+    selectedSelection ?? (selectedImage ? { source: 'upload', url: selectedImage } : null)
+  )
   const [presets, setPresets] = useState<ModelResponse[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -73,8 +76,11 @@ export function ModelPanel({
     try {
       const response = await uploadImage(file, 'model')
       if (response.success && response.data) {
-        const imageUrl = response.data.url
-        setSelected(imageUrl)
+        setSelected({
+          source: 'upload',
+          id: response.data.file_id,
+          url: response.data.url,
+        })
       }
     } catch (error) {
       console.error('上传图片失败', error)
@@ -91,6 +97,8 @@ export function ModelPanel({
       }
     }
   }
+
+  const selectedUrl = selected?.url ?? null
 
   const handleConfirm = () => {
     onConfirm(selected)
@@ -178,7 +186,7 @@ export function ModelPanel({
               <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
               <div className="relative w-32 aspect-[4/3] rounded-xl overflow-hidden border-2 border-primary shadow-soft-lg">
                 <img
-                  src={selected}
+                  src={selectedUrl ?? ''}
                   alt="当前选择的模特"
                   className="w-full h-full object-cover"
                 />
@@ -251,10 +259,14 @@ export function ModelPanel({
                 {(activeCategory === 'all' ? allModels : filteredModels).map((model) => (
                   <button
                     key={model.id}
-                    onClick={() => setSelected(model.image_url)}
+                    onClick={() => setSelected({
+                      source: 'preset',
+                      id: model.id,
+                      url: model.image_url,
+                    })}
                     className={cn(
                       "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
-                      selected === model.image_url
+                      selectedUrl === model.image_url
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
                     )}
@@ -264,7 +276,7 @@ export function ModelPanel({
                       alt={model.name}
                       className="w-full h-full object-cover"
                     />
-                    {selected === model.image_url && (
+                    {selectedUrl === model.image_url && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <Check className="w-3 h-3 text-primary-foreground" />

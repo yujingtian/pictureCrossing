@@ -4,24 +4,9 @@ import { MainCanvas } from '@/components/main-canvas'
 import { InputSection } from '@/components/input-section'
 import { BottomActionBar } from '@/components/bottom-action-bar'
 import { AccessoryPanel, ModelPanel } from '@/components/step-panels'
-import type { AccessoryType } from '@/components/step-panels'
+import type { AccessoryInput, AccessoryType, ModelInput } from '@/types/api'
 import { createGeneration, getTaskStatus } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
-
-// 选中的配饰数据结构
-interface AccessorySelection {
-  source: 'preset' | 'upload'
-  id?: string
-  url: string
-}
-
-// 选中的模特数据结构
-interface ModelSelection {
-  source: 'preset' | 'upload'
-  id?: string
-  url: string
-  maskUrl?: string
-}
 
 export default function App() {
   const { toast } = useToast()
@@ -31,15 +16,15 @@ export default function App() {
 
   // 选中的内容
   const [selectedAccessoryType, setSelectedAccessoryType] = useState<AccessoryType>('bracelet')
-  const [selectedAccessory, setSelectedAccessory] = useState<AccessorySelection | null>(null)
-  const [selectedModel, setSelectedModel] = useState<ModelSelection | null>(null)
+  const [selectedAccessory, setSelectedAccessory] = useState<AccessoryInput | null>(null)
+  const [selectedModel, setSelectedModel] = useState<ModelInput | null>(null)
 
   // 生成状态
   const [isLoading, setIsLoading] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
 
   // 轮询相关
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // 检查是否所有步骤都已完成
   const uploadedItems = {
@@ -55,30 +40,14 @@ export default function App() {
   }
 
   // 处理配饰选择确认
-  const handleAccessoryConfirm = (type: AccessoryType, imageUrl: string | null) => {
+  const handleAccessoryConfirm = (type: AccessoryType, selection: AccessoryInput | null) => {
     setSelectedAccessoryType(type)
-    if (imageUrl) {
-      // 这里简化处理，实际应该区分是 preset 还是 upload
-      setSelectedAccessory({
-        source: 'preset',
-        url: imageUrl,
-      })
-    } else {
-      setSelectedAccessory(null)
-    }
+    setSelectedAccessory(selection)
   }
 
   // 处理模特选择确认
-  const handleModelConfirm = (imageUrl: string | null) => {
-    if (imageUrl) {
-      // 这里简化处理，实际应该区分是 preset 还是 upload
-      setSelectedModel({
-        source: 'preset',
-        url: imageUrl,
-      })
-    } else {
-      setSelectedModel(null)
-    }
+  const handleModelConfirm = (selection: ModelInput | null) => {
+    setSelectedModel(selection)
   }
 
   // 清理轮询
@@ -229,12 +198,14 @@ export default function App() {
         onConfirm={handleAccessoryConfirm}
         selectedType={selectedAccessoryType}
         selectedImage={selectedAccessory?.url}
+        selectedSelection={selectedAccessory}
       />
       <ModelPanel
         open={modelPanelOpen}
         onOpenChange={setModelPanelOpen}
         onConfirm={handleModelConfirm}
         selectedImage={selectedModel?.url}
+        selectedSelection={selectedModel}
         accessoryType={selectedAccessoryType}
       />
     </main>

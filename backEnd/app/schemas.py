@@ -1,6 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
+
+
+InputSource = Literal["preset", "upload", "custom"]
+AccessoryType = Literal["bracelet"]
+UploadType = Literal["accessory", "model", "mask"]
 
 
 class AccessoryResponse(BaseModel):
@@ -40,16 +45,32 @@ class UploadResponse(BaseModel):
 
 
 class AccessoryInput(BaseModel):
-    source: str
+    source: InputSource
     id: Optional[str] = None
     url: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_source_fields(self):
+        if self.source in ("upload", "custom") and not self.url:
+            raise ValueError("上传配饰必须提供 url")
+        if self.source == "preset" and not (self.id or self.url):
+            raise ValueError("预设配饰必须提供 id 或 url")
+        return self
 
 
 class ModelInput(BaseModel):
-    source: str
+    source: InputSource
     id: Optional[str] = None
     url: Optional[str] = None
     mask_url: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_source_fields(self):
+        if self.source in ("upload", "custom") and not self.url:
+            raise ValueError("上传模特必须提供 url")
+        if self.source == "preset" and not (self.id or self.url):
+            raise ValueError("预设模特必须提供 id 或 url")
+        return self
 
 
 class SceneInput(BaseModel):
@@ -64,7 +85,7 @@ class GenerateOptions(BaseModel):
 
 
 class CreateGenerationRequest(BaseModel):
-    accessory_type: str
+    accessory_type: AccessoryType
     accessory: AccessoryInput
     model: ModelInput
     scene: Optional[SceneInput] = None

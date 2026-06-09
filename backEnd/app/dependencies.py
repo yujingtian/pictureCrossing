@@ -1,3 +1,5 @@
+from fastapi import Request
+
 from app.services.rate_limiter import get_rate_limiter, get_rate_limit_string
 from app.config import get_settings
 

@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from fastapi import UploadFile, HTTPException
@@ -5,6 +6,7 @@ from PIL import Image
 from app.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class StorageService:
@@ -18,26 +20,30 @@ class StorageService:
         if not file.content_type or not file.content_type.startswith("image/"):
             raise HTTPException(status_code=400, detail="只支持图片文件")
 
-        ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+        contents = await file.read()
+        if len(contents) > settings.max_upload_size:
+            raise HTTPException(status_code=413, detail="图片大小超过限制")
+
+        ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "jpg"
         file_id = f"{file_type}_{uuid.uuid4().hex[:12]}"
         filename = f"{file_id}.{ext}"
         filepath = os.path.join(self.upload_dir, filename)
 
-        contents = await file.read()
         with open(filepath, "wb") as f:
             f.write(contents)
 
         thumb_filename = None
         try:
-            thumb_filename = f"{file_id}_thumb.jpg"
-            thumb_filepath = os.path.join(self.upload_dir, thumb_filename)
+            candidate_thumb_filename = f"{file_id}_thumb.jpg"
+            thumb_filepath = os.path.join(self.upload_dir, candidate_thumb_filename)
             with Image.open(filepath) as img:
                 img.thumbnail((200, 200))
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
                 img.save(thumb_filepath, "JPEG", quality=85)
-        except Exception as e:
-            print(f"缩略图生成失败: {e}")
+            thumb_filename = candidate_thumb_filename
+        except Exception:
+            logger.warning("缩略图生成失败", exc_info=True)
 
         return {
             "file_id": file_id,

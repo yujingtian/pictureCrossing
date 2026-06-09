@@ -7,6 +7,7 @@ import type {
   CreateGenerationResponse,
   TaskStatusResponse,
   ApiResponse,
+  UploadType,
 } from '@/types/api'
 
 function getErrorMessage(data: unknown, fallback: string) {
@@ -24,9 +25,25 @@ function getErrorMessage(data: unknown, fallback: string) {
   return fallback
 }
 
+async function parseResponseBody(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    try {
+      return await response.json()
+    } catch {
+      return null
+    }
+  }
+
+  const text = await response.text()
+  return text || null
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await response.json()
-  const errorMessage = getErrorMessage(data, `HTTP ${response.status}`)
+  const data = await parseResponseBody(response)
+  const fallback = typeof data === 'string' && data ? data : `HTTP ${response.status}`
+  const errorMessage = getErrorMessage(data, fallback)
 
   if (!response.ok) {
     throw new Error(errorMessage)
@@ -39,7 +56,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     }
   }
 
-  return data
+  return data as T
 }
 
 export async function getPresetAccessories(type?: string): Promise<ApiResponse<AccessoryResponse[]>> {
@@ -69,7 +86,7 @@ export async function getPresetScenes(category?: string): Promise<ApiResponse<Sc
   return handleResponse<ApiResponse<SceneResponse[]>>(response)
 }
 
-export async function uploadImage(file: File, type: string): Promise<ApiResponse<UploadResponse>> {
+export async function uploadImage(file: File, type: UploadType): Promise<ApiResponse<UploadResponse>> {
   const formData = new FormData()
   formData.append('file', file)
 

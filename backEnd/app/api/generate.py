@@ -34,7 +34,7 @@ def create_generation(
 
 
 @router.get("/{task_id}", response_model=ApiResponse)
-def get_task_status(task_id: str):
+def get_task_status(task_id: str, db: Session = Depends(get_db)):
     task_queue = get_task_queue()
-    status = task_queue.get_task_status(task_id)
+    status = task_queue.get_task_status(task_id, db=db)
     return ApiResponse(success=True, data=status)

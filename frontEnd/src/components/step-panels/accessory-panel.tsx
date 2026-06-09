@@ -13,10 +13,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { getPresetAccessories, uploadImage } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
-import type { AccessoryResponse } from '@/types/api'
+import type { AccessoryInput, AccessoryResponse, AccessoryType } from '@/types/api'
 
 // 配饰类型定义
-export type AccessoryType = 'bracelet'
+export type { AccessoryType }
 
 export interface AccessoryTypeInfo {
   id: AccessoryType
@@ -32,9 +32,10 @@ export const accessoryTypes: AccessoryTypeInfo[] = [
 interface AccessoryPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (type: AccessoryType, imageUrl: string | null) => void
+  onConfirm: (type: AccessoryType, selection: AccessoryInput | null) => void
   selectedType?: AccessoryType
   selectedImage?: string | null
+  selectedSelection?: AccessoryInput | null
 }
 
 export function AccessoryPanel({
@@ -43,14 +44,19 @@ export function AccessoryPanel({
   onConfirm,
   selectedType: initialType,
   selectedImage,
+  selectedSelection,
 }: AccessoryPanelProps) {
   const { toast } = useToast()
   const [currentType, setCurrentType] = useState<AccessoryType>(initialType || 'bracelet')
-  const [selected, setSelected] = useState<string | null>(selectedImage || null)
+  const [selected, setSelected] = useState<AccessoryInput | null>(
+    selectedSelection ?? (selectedImage ? { source: 'upload', url: selectedImage } : null)
+  )
   const [presets, setPresets] = useState<AccessoryResponse[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const selectedUrl = selected?.url ?? null
 
   const handleConfirm = () => {
     onConfirm(currentType, selected)
@@ -71,8 +77,11 @@ export function AccessoryPanel({
     try {
       const response = await uploadImage(file, 'accessory')
       if (response.success && response.data) {
-        const imageUrl = response.data.url
-        setSelected(imageUrl)
+        setSelected({
+          source: 'upload',
+          id: response.data.file_id,
+          url: response.data.url,
+        })
       }
     } catch (error) {
       console.error('上传图片失败', error)
@@ -192,7 +201,7 @@ export function AccessoryPanel({
               <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
               <div className="relative w-24 aspect-square rounded-xl overflow-hidden border-2 border-primary shadow-soft-lg">
                 <img
-                  src={selected}
+                  src={selectedUrl ?? ''}
                   alt="当前选择的配饰"
                   className="w-full h-full object-cover"
                 />
@@ -219,10 +228,14 @@ export function AccessoryPanel({
                 {presets.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setSelected(item.image_url)}
+                    onClick={() => setSelected({
+                      source: 'preset',
+                      id: item.id,
+                      url: item.image_url,
+                    })}
                     className={cn(
                       "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                      selected === item.image_url
+                      selectedUrl === item.image_url
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
                     )}
@@ -232,7 +245,7 @@ export function AccessoryPanel({
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
-                    {selected === item.image_url && (
+                    {selectedUrl === item.image_url && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <Check className="w-3 h-3 text-primary-foreground" />

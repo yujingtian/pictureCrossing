@@ -1,3 +1,4 @@
+import logging
 import uuid
 import threading
 import time
@@ -10,6 +11,7 @@ from app.config import get_settings
 from app.database import SessionLocal
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class TaskQueue:
@@ -82,19 +84,73 @@ class TaskQueue:
             if task_id in self.tasks:
                 self.tasks[task_id].update(kwargs)
 
-    def get_task_status(self, task_id: str) -> dict:
+    def get_task_status(self, task_id: str, db: Session = None) -> dict:
         with self.lock:
             if task_id in self.tasks:
                 info = self.tasks[task_id].copy()
                 info["task_id"] = task_id
                 return info
+
+        if db:
+            task = db.query(GenerationTask).filter_by(id=task_id).first()
+            if task:
+                return self._build_db_task_status(task)
+
         return {"task_id": task_id, "status": "not_found"}
+
+    def _build_db_task_status(self, task: GenerationTask) -> dict:
+        progress_by_status = {
+            TaskStatus.PENDING: 0,
+            TaskStatus.PROCESSING: 10,
+            TaskStatus.COMPLETED: 100,
+            TaskStatus.FAILED: 100,
+        }
+        return {
+            "task_id": task.id,
+            "status": task.status.value,
+            "progress": progress_by_status.get(task.status, 0),
+            "result_url": task.result_image_url,
+            "error": task.error_message,
+        }
+
+    def _get_task_options(self, task_id: str) -> dict:
+        with self.lock:
+            return self.tasks.get(task_id, {}).get("options", {}).copy()
+
+    def _resolve_accessory(self, db: Session, task: GenerationTask) -> tuple[str, Optional[str]]:
+        accessory_name = "精美款式"
+        accessory_url = None
+
+        if task.accessory_source == "preset" and task.accessory_id:
+            accessory = db.query(PresetAccessory).filter_by(id=task.accessory_id).first()
+            if accessory:
+                accessory_name = accessory.name
+                accessory_url = accessory.image_url
+        elif task.accessory_url:
+            accessory_url = task.accessory_url
+
+        return accessory_name, accessory_url
+
+    def _resolve_scene_template(self, db: Session, task: GenerationTask) -> str:
+        scene_template = "简约背景"
+        if task.scene_id:
+            scene = db.query(PresetScene).filter_by(id=task.scene_id).first()
+            if scene and scene.prompt_template:
+                scene_template = scene.prompt_template
+        return scene_template
+
+    def _resolve_model_url(self, db: Session, task: GenerationTask) -> Optional[str]:
+        model_url = task.model_url
+        if task.model_source == "preset" and task.model_id:
+            model = db.query(PresetModel).filter_by(id=task.model_id).first()
+            if model:
+                model_url = model.image_url
+        return model_url
 
     def _execute_task(self, task_id: str):
         db = SessionLocal()
         try:
-            with self.lock:
-                task_options = self.tasks.get(task_id, {}).get("options", {}).copy()
+            task_options = self._get_task_options(task_id)
 
             custom_prompt = (task_options.get("prompt") or "").strip()
             strength = task_options.get("strength", 0.75)
@@ -108,24 +164,10 @@ class TaskQueue:
             db.commit()
             self._update_task_info(task_id, status="processing", progress=10)
 
-            accessory_name = "精美款式"
-            accessory_url = None
-            if task.accessory_source == "preset" and task.accessory_id:
-                acc = db.query(PresetAccessory).filter_by(id=task.accessory_id).first()
-                if acc:
-                    accessory_name = acc.name
-                    accessory_url = acc.image_url
-            elif task.accessory_url:
-                accessory_url = task.accessory_url
-
+            accessory_name, accessory_url = self._resolve_accessory(db, task)
             self._update_task_info(task_id, progress=30)
 
-            scene_template = "简约背景"
-            if task.scene_id:
-                scene = db.query(PresetScene).filter_by(id=task.scene_id).first()
-                if scene and scene.prompt_template:
-                    scene_template = scene.prompt_template
-
+            scene_template = self._resolve_scene_template(db, task)
             self._update_task_info(task_id, progress=50)
 
             prompt = self.ai_service.build_prompt(
@@ -136,18 +178,13 @@ class TaskQueue:
             )
             if custom_prompt:
                 prompt = f"{prompt}\n用户补充要求：{custom_prompt}"
-            print(f"[AI Prompt][{task_id}]\n{prompt}\n")
+            logger.debug("[AI Prompt][%s]\n%s", task_id, prompt)
             task.prompt = prompt
             db.commit()
 
             self._update_task_info(task_id, progress=70)
 
-            model_url = task.model_url
-            if task.model_source == "preset" and task.model_id:
-                model = db.query(PresetModel).filter_by(id=task.model_id).first()
-                if model:
-                    model_url = model.image_url
-
+            model_url = self._resolve_model_url(db, task)
             image_data = self.ai_service.generate_image(
                 base_image_url=model_url,
                 accessory_image_url=accessory_url,
@@ -169,7 +206,7 @@ class TaskQueue:
                 result_url=result_url
             )
         except Exception as e:
-            print(f"任务 {task_id} 失败: {e}")
+            logger.exception("任务 %s 失败", task_id)
             task = db.query(GenerationTask).filter_by(id=task_id).first()
             if task:
                 task.status = TaskStatus.FAILED

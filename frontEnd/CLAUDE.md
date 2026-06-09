@@ -75,9 +75,9 @@ frontEnd/
 ### 状态管理
 
 状态在 `src/App.tsx` 中使用 React hooks 本地管理：
-- `accessoryPanelOpen`, `modelPanelOpen`, `scenePanelOpen` - 抽屉可见性
-- `selectedAccessoryType` - 配饰类型 (`bracelet` | `necklace` | `earring` | `ring`)
-- `selectedAccessory`, `selectedModel`, `selectedScene` - 用户选择
+- `accessoryPanelOpen`, `modelPanelOpen` - 抽屉可见性
+- `selectedAccessoryType` - 配饰类型（当前支持 `bracelet`）
+- `selectedAccessory`, `selectedModel` - 用户选择，保留 `source/id/url` 以区分预设与上传资源
 - `isLoading`, `generatedImage` - 生成状态
 
 ### 组件层次
@@ -86,11 +86,10 @@ frontEnd/
 App (App.tsx)
 ├── TopHeader
 ├── MainCanvas (显示生成的图片或占位符)
-├── InputSection (三步卡片)
+├── InputSection (步骤卡片)
 ├── BottomActionBar (生成按钮)
 ├── AccessoryPanel (抽屉)
-├── ModelPanel (抽屉)
-└── ScenePanel (抽屉)
+└── ModelPanel (抽屉)
 ```
 
 ### 样式系统
@@ -104,10 +103,10 @@ App (App.tsx)
 ### 配饰类型
 
 ```typescript
-type AccessoryType = 'bracelet' | 'necklace' | 'earring' | 'ring'
+type AccessoryType = 'bracelet'
 ```
 
-每种类型有不同的预设图片和对应的模特身体部位。
+当前前端主流程只启用手绳/手链类型；扩展其他类型时需要同步后端 schema、预设数据和 prompt 逻辑。
 
 ## 重要说明
 
@@ -126,3 +125,7 @@ type AccessoryType = 'bracelet' | 'necklace' | 'earring' | 'ring'
 - `bailian`：调用阿里百炼 `wan2.7-image-pro`。
 
 上传接口返回 `url` 和 `thumbnail_url`：前端预览可使用 `thumbnail_url`，提交生成任务必须使用 `url` 原图。
+
+生成请求中资源来源需保持语义准确：
+- 预设资源使用 `source: 'preset'` 并携带 `id` 和 `url`；
+- 上传资源使用 `source: 'upload'` 并携带上传接口返回的原图 `url`。
