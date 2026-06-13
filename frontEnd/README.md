@@ -86,11 +86,12 @@ frontEnd/src/
 ├── types/api.ts                    # 前后端 API 类型
 ├── components/
 │   ├── main-canvas.tsx             # 主预览区域
-│   ├── input-section.tsx           # 两步选择入口
+│   ├── image-preview.tsx           # 图片点击放大预览弹窗
+│   ├── input-section.tsx           # 两步选择入口，缩略图可点击放大且不触发步骤弹框
 │   ├── bottom-action-bar.tsx       # 生成按钮
 │   └── step-panels/
-│       ├── accessory-panel.tsx     # 配饰预设/上传
-│       ├── model-panel.tsx         # 模特/手部图预设/上传
+│       ├── accessory-panel.tsx     # 配饰预设/上传，弹框内图片可点击放大
+│       ├── model-panel.tsx         # 模特/手部图预设/上传，弹框内图片可点击放大
 │       └── scene-panel.tsx         # 场景选择（当前主流程未启用）
 └── hooks/use-toast.ts              # 错误/状态提示
 ```

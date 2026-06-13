@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Upload, Camera, Check } from 'lucide-react'
+import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 import {
   Drawer,
@@ -66,11 +67,13 @@ export function BraceletPanel({ open, onOpenChange, onConfirm, selectedImage }: 
             <h4 className="text-[13px] font-medium text-foreground mb-3">热门款式</h4>
             <div className="grid grid-cols-3 gap-2.5">
               {presetBracelets.map((bracelet) => (
-                <button
+                <ImagePreview
                   key={bracelet.id}
-                  onClick={() => setSelected(bracelet.image)}
-                  className={cn(
-                    "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                  src={bracelet.image}
+                  alt={bracelet.name}
+                  onOpenPreview={() => setSelected(bracelet.image)}
+                  triggerClassName={cn(
+                    "aspect-square rounded-xl border-2 transition-all",
                     selected === bracelet.image
                       ? "border-primary shadow-soft-lg"
                       : "border-transparent"
@@ -91,7 +94,7 @@ export function BraceletPanel({ open, onOpenChange, onConfirm, selectedImage }: 
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
                     <span className="text-[10px] text-white font-medium">{bracelet.name}</span>
                   </div>
-                </button>
+                </ImagePreview>
               ))}
             </div>
           </div>

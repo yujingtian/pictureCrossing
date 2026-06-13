@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Upload, Camera, Check, Sparkles, Loader2 } from 'lucide-react'
+
+import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 import {
   Drawer,
@@ -199,7 +201,11 @@ export function AccessoryPanel({
           {selected && (
             <div className="mb-4">
               <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
-              <div className="relative w-24 aspect-square rounded-xl overflow-hidden border-2 border-primary shadow-soft-lg">
+              <ImagePreview
+                src={selectedUrl ?? ''}
+                alt="当前选择的配饰"
+                triggerClassName="w-24 aspect-square rounded-xl border-2 border-primary shadow-soft-lg"
+              >
                 <img
                   src={selectedUrl ?? ''}
                   alt="当前选择的配饰"
@@ -210,7 +216,7 @@ export function AccessoryPanel({
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 </div>
-              </div>
+              </ImagePreview>
             </div>
           )}
 
@@ -226,15 +232,17 @@ export function AccessoryPanel({
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {presets.map((item) => (
-                  <button
+                  <ImagePreview
                     key={item.id}
-                    onClick={() => setSelected({
+                    src={item.image_url}
+                    alt={item.name}
+                    onOpenPreview={() => setSelected({
                       source: 'preset',
                       id: item.id,
                       url: item.image_url,
                     })}
-                    className={cn(
-                      "relative aspect-square rounded-xl overflow-hidden border-2 transition-all",
+                    triggerClassName={cn(
+                      "aspect-square rounded-xl border-2 transition-all",
                       selectedUrl === item.image_url
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
@@ -255,7 +263,7 @@ export function AccessoryPanel({
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1">
                       <span className="text-[9px] text-white font-medium">{item.name}</span>
                     </div>
-                  </button>
+                  </ImagePreview>
                 ))}
               </div>
             )}

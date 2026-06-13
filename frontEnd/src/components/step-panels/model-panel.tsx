@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Upload, Camera, Check, User, Loader2 } from 'lucide-react'
+import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 import {
   Drawer,
@@ -184,7 +185,11 @@ export function ModelPanel({
           {selected && (
             <div className="mb-4">
               <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
-              <div className="relative w-32 aspect-[4/3] rounded-xl overflow-hidden border-2 border-primary shadow-soft-lg">
+              <ImagePreview
+                src={selectedUrl ?? ''}
+                alt="当前选择的模特"
+                triggerClassName="w-32 aspect-[4/3] rounded-xl border-2 border-primary shadow-soft-lg"
+              >
                 <img
                   src={selectedUrl ?? ''}
                   alt="当前选择的模特"
@@ -195,7 +200,7 @@ export function ModelPanel({
                     <Check className="w-3 h-3 text-primary-foreground" />
                   </div>
                 </div>
-              </div>
+              </ImagePreview>
             </div>
           )}
 
@@ -257,15 +262,17 @@ export function ModelPanel({
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {(activeCategory === 'all' ? allModels : filteredModels).map((model) => (
-                  <button
+                  <ImagePreview
                     key={model.id}
-                    onClick={() => setSelected({
+                    src={model.image_url}
+                    alt={model.name}
+                    onOpenPreview={() => setSelected({
                       source: 'preset',
                       id: model.id,
                       url: model.image_url,
                     })}
-                    className={cn(
-                      "relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all",
+                    triggerClassName={cn(
+                      "aspect-[4/3] rounded-xl border-2 transition-all",
                       selectedUrl === model.image_url
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
@@ -286,7 +293,7 @@ export function ModelPanel({
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
                       <span className="text-[10px] text-white font-medium">{model.name}</span>
                     </div>
-                  </button>
+                  </ImagePreview>
                 ))}
               </div>
             )}

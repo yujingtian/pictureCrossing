@@ -1,4 +1,6 @@
 import { Sparkles, ImagePlus } from 'lucide-react'
+
+import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 
 interface MainCanvasProps {
@@ -30,11 +32,17 @@ export function MainCanvas({ imageUrl, isLoading }: MainCanvasProps) {
             </p>
           </div>
         ) : imageUrl ? (
-          <img
+          <ImagePreview
             src={imageUrl}
             alt="试戴效果图"
-            className="w-full h-full object-cover"
-          />
+            triggerClassName="h-full w-full rounded-3xl"
+          >
+            <img
+              src={imageUrl}
+              alt="试戴效果图"
+              className="h-full w-full object-cover"
+            />
+          </ImagePreview>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6">
             {/* 装饰性背景元素 */}

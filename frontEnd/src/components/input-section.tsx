@@ -1,4 +1,7 @@
+import type { KeyboardEvent, MouseEvent } from 'react'
 import { ChevronRight, Check } from 'lucide-react'
+
+import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 import type { AccessoryType } from '@/components/step-panels'
 
@@ -26,12 +29,27 @@ function StepCard({
   imageUrl,
   onClick
 }: StepCardProps) {
+  const isPreviewTrigger = (target: EventTarget | null) =>
+    target instanceof HTMLElement && !!target.closest('[data-image-preview-trigger="true"]')
+
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (isPreviewTrigger(event.target)) return
+    onClick?.()
+  }
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (isPreviewTrigger(event.target)) return
+    if (event.key === 'Enter') {
+      onClick?.()
+    }
+  }
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
+      onKeyDown={handleKeyDown}
       className={cn(
         "w-full p-3.5 rounded-2xl cursor-pointer flex items-center gap-3",
         "bg-card border border-border/60 shadow-soft",
@@ -46,11 +64,18 @@ function StepCard({
         hasContent ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
       )}>
         {imageUrl ? (
-          <img
+          <ImagePreview
             src={imageUrl}
             alt={title}
-            className="w-full h-full object-cover"
-          />
+            stopPropagation
+            triggerClassName="h-full w-full rounded-xl"
+          >
+            <img
+              src={imageUrl}
+              alt={title}
+              className="h-full w-full object-cover"
+            />
+          </ImagePreview>
         ) : hasContent ? (
           <Check className="w-5 h-5" />
         ) : (
