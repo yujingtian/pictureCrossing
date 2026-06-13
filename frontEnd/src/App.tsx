@@ -179,7 +179,7 @@ export default function App() {
           <div className="px-4">
             <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
               <p className="text-[11px] text-center text-primary/90">
-                太棒了！所有元素已就绪，点击下方按钮生成试戴效果
+                太棒了！素材已就绪，生成可能需要 30 秒到 1 分钟，请耐心等待
               </p>
             </div>
           </div>

@@ -169,6 +169,8 @@ interface TaskStatusResponse {
 - `status === 'completed'`：显示 `result_url`；
 - `status === 'failed'`：展示 `error`。
 
+生成过程中 UI 会提示高清图片通常需要 30 秒到 1 分钟，并提醒用户保持页面打开等待自动展示结果。
+
 ## 当前生成链路
 
 ```text

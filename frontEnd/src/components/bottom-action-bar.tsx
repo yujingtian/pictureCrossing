@@ -28,11 +28,15 @@ export function BottomActionBar({ isActive, isLoading, onGenerate }: BottomActio
             "w-[18px] h-[18px]",
             isLoading && "animate-pulse"
           )} />
-          {isLoading ? '生成中...' : '一键生成试戴效果'}
+          {isLoading ? '生成中，请耐心等待' : '一键生成试戴效果'}
         </button>
 
         {/* 提示文字 */}
-        {!isActive && (
+        {isLoading ? (
+          <p className="text-center text-[11px] text-muted-foreground mt-2">
+            图片生成可能需要 30 秒到 1 分钟，期间请不要关闭页面
+          </p>
+        ) : !isActive && (
           <p className="text-center text-[11px] text-muted-foreground mt-2">
             请先完成上方两个步骤
           </p>

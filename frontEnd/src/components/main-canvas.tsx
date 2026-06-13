@@ -22,14 +22,24 @@ export function MainCanvas({ imageUrl, isLoading }: MainCanvasProps) {
         style={{ aspectRatio: '4/5' }}
       >
         {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
               <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary" />
             </div>
-            <p className="text-sm text-muted-foreground animate-pulse">
-              魔法生成中...
-            </p>
+            <div className="space-y-2">
+              <p className="text-base font-medium text-foreground/85 animate-pulse">
+                AI 正在生成试戴效果
+              </p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                高清图片生成通常需要 30 秒到 1 分钟，请保持页面打开，完成后会自动展示结果。
+              </p>
+            </div>
+            <div className="grid w-full max-w-56 gap-1.5 text-left text-[11px] text-muted-foreground">
+              <div className="rounded-full bg-card/75 px-3 py-1.5 shadow-soft">✓ 已提交素材</div>
+              <div className="rounded-full bg-card/75 px-3 py-1.5 shadow-soft">✨ 正在融合配饰与模特</div>
+              <div className="rounded-full bg-card/75 px-3 py-1.5 shadow-soft">🖼️ 生成完成后自动刷新</div>
+            </div>
           </div>
         ) : imageUrl ? (
           <ImagePreview
