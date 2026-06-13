@@ -1,9 +1,9 @@
-# 阿里百炼 Qwen-Image-2.0-Pro Python SDK 同步调用接入指南
+# 阿里百炼 Qwen-Image-2.0-Pro 图像编辑同步调用接入指南
 
-本文档整理阿里百炼 `qwen-image-2.0-pro` 的 Python SDK 同步调用方式，参考根目录资料 `阿里百炼qwen-image-2.0-pro接入.md`，用于后续将项目后端从 Wan2.7 接入方式迁移到 Qwen-Image-2.0-Pro。
+本文档整理阿里百炼 `qwen-image-2.0-pro` 的 Python SDK 同步图像编辑调用方式，参考根目录资料 `阿里百炼wan2.7-image-pro接入.md`。该根目录资料当前记录的是千问图像编辑接口，支持 1-3 张输入图片，适用于本项目“模特/手部图 + 手绳图 -> 真实试戴效果图”的业务。
 
-> 注意：`.doc/阿里百炼Wan2.7-Image-Pro同步调用接入指南.md` 保留为 `wan2.7-image-pro` 的 `ImageGeneration.call(...)` 接入指南。  
-> 本文档专门描述 `qwen-image-2.0-pro`，其同步调用入口为 `dashscope.MultiModalConversation.call(...)`，不要直接沿用 Wan2.7 的 `ImageGeneration.call(...)` 代码结构。
+> 注意：`qwen-image-2.0-pro` 的同步调用入口是 `dashscope.MultiModalConversation.call(...)`。  
+> 与旧 Wan2.7 的 `ImageGeneration.call(...)` 不同，Qwen 图像编辑同样支持图片输入，但图片需要作为 `messages[0].content` 中的 `{"image": ...}` 条目传入。
 
 ---
 
@@ -12,11 +12,13 @@
 | 项 | 说明 |
 | --- | --- |
 | 模型名 | `qwen-image-2.0-pro` |
-| 推荐用途 | 千问图像生成与编辑模型 Pro 系列，文字渲染、真实质感、语义遵循能力更强 |
+| 能力 | 千问图像生成与编辑模型 Pro 系列，支持单图编辑、多图融合、文字渲染、真实质感和语义遵循 |
 | 同步接口 | `POST /api/v1/services/aigc/multimodal-generation/generation` |
 | Python SDK 入口 | `dashscope.MultiModalConversation.call(...)` |
+| 输入图片 | `messages[0].content` 中放入 1-3 个 `{"image": ...}` 条目 |
+| 编辑指令 | `messages[0].content` 中放入 1 个 `{"text": ...}` 条目 |
 | 返回结果 | `response.output.choices[*].message.content[*].image` 中的临时图片 URL |
-| 图片格式 | PNG |
+| 输出格式 | PNG |
 | 链接有效期 | 通常 24 小时，业务侧应及时下载保存 |
 
 北京地域：
@@ -80,11 +82,14 @@ bailian_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
 
 - `BAILIAN_API_KEY` 不要提交到 Git。
 - `BAILIAN_BASE_URL` 应按 API Key 所属地域配置。
-- 当前项目原有 Wan2.7 接入使用 `ImageGeneration.call(...)`，迁移 Qwen-Image-2.0-Pro 时需要改为 `MultiModalConversation.call(...)`。
+- Qwen 图像编辑支持通过公网 URL、OSS 临时 URL 或 Base64 data URL 传入图片。
+- 本项目上传图片通常是后端本地路径，推荐在调用百炼前转为 `data:{mime};base64,{base64_data}`。
 
 ---
 
-## 4. 最小 Python SDK 同步调用示例
+## 4. Python SDK 多图编辑最小示例
+
+### 4.1 通过公网 URL 传入图片
 
 ```python
 import json
@@ -103,9 +108,11 @@ messages = [
     {
         "role": "user",
         "content": [
+            {"image": "https://example.com/model_or_hand.png"},
+            {"image": "https://example.com/bracelet.png"},
             {
-                "text": "生成一张高端珠宝广告图：柔和自然光下，一只优雅手腕佩戴金色手链，背景简洁，真实摄影风格，细节清晰。"
-            }
+                "text": "使用图一作为模特/手部底图，请勿改变图一的手型、姿势、皮肤纹理、背景和光线。将图二中的手绳原样佩戴到图一手腕位置，保持图二手绳的编织结构、珠子/吊坠、颜色、材质和细节。只做必要的缩放、透视弯曲、遮挡、阴影和高光融合，不要重新设计手绳。"
+            },
         ],
     }
 ]
@@ -114,17 +121,18 @@ response = MultiModalConversation.call(
     api_key=api_key,
     model="qwen-image-2.0-pro",
     messages=messages,
-    result_format="message",
     stream=False,
+    n=1,
     watermark=False,
+    negative_prompt="低分辨率，低画质，手指畸形，手部变形，饰品漂浮，像贴纸，改变手绳款式，额外饰品，AI感明显",
     prompt_extend=True,
-    negative_prompt="低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，画面具有AI感，构图混乱，文字模糊，扭曲。",
     size="2048*2048",
 )
 
 if response.status_code != 200:
     raise RuntimeError(
-        f"百炼 Qwen-Image 调用失败: code={response.code}, message={response.message}"
+        f"百炼 Qwen-Image 调用失败: status_code={response.status_code}, "
+        f"code={response.code}, message={response.message}, request_id={response.request_id}"
     )
 
 print(json.dumps(response, ensure_ascii=False, indent=2))
@@ -135,47 +143,86 @@ for choice_index, choice in enumerate(response.output.choices):
     for content_index, content in enumerate(content_list):
         image_url = content.get("image") if isinstance(content, dict) else getattr(content, "image", None)
         if image_url:
-            file_name = f"qwen_image_{choice_index}_{content_index}.png"
+            file_name = f"qwen_image_edit_{choice_index}_{content_index}.png"
             urllib.request.urlretrieve(image_url, file_name)
             print(f"saved: {file_name}")
 ```
 
-关键点：
+### 4.2 通过 Base64 data URL 传入图片
 
-- 使用 `MultiModalConversation.call(...)`，不是 `ImageGeneration.call(...)`。
-- `messages` 是普通 dict 数组，消息角色为 `user`。
-- `result_format="message"`，返回结果在 `output.choices[*].message.content[*].image`。
-- 返回的 `image` 是临时公网 URL，业务侧应立即下载并保存到自己的 `results/` 目录。
+本项目后端已有 `_download_image(...)` 和 `_image_data_to_data_url(...)` 之类的工具函数，可复用它们将上传图转为 data URL。
+
+```python
+import base64
+import mimetypes
+
+
+def encode_file(file_path: str) -> str:
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if not mime_type or not mime_type.startswith("image/"):
+        raise ValueError("不支持或无法识别的图像格式")
+
+    with open(file_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+model_image = encode_file("/path/to/model_or_hand.png")
+bracelet_image = encode_file("/path/to/bracelet.png")
+
+messages = [
+    {
+        "role": "user",
+        "content": [
+            {"image": model_image},
+            {"image": bracelet_image},
+            {"text": "使用图一作为底图，将图二手绳真实佩戴到图一手腕上。"},
+        ],
+    }
+]
+```
 
 ---
 
-## 5. 参数说明
+## 5. 请求参数说明
 
 | 参数 | 示例 | 说明 |
 | --- | --- | --- |
 | `model` | `qwen-image-2.0-pro` | 模型名，建议通过 `BAILIAN_MODEL` 配置 |
-| `messages` | `[{"role":"user","content":[{"text":"..."}]}]` | 当前同步文生图请求只需要单轮 user 消息 |
-| `content[].text` | `生成一张...` | 正向提示词；Qwen-Image-2.0 系列长度上限约 1300 Token，超出会截断 |
-| `result_format` | `message` | 建议固定为 `message`，便于解析图片 URL |
+| `messages` | `[{"role":"user","content":[{"image":"..."},{"image":"..."},{"text":"..."}]}]` | 当前同步接口仅支持单轮 user 消息 |
+| `content[].image` | `https://...` / `data:image/png;base64,...` | 输入图片，支持 1-3 张 |
+| `content[].text` | `使用图一作为底图...` | 编辑指令；只能传 1 个 text |
 | `stream` | `False` | 同步非流式调用 |
 | `watermark` | `False` | 是否添加 Qwen-Image 水印 |
-| `prompt_extend` | `True` | 是否开启提示词智能改写；需要更可控时可设为 `False` |
+| `prompt_extend` | `True` | 是否开启提示词智能改写；若要更严格还原手绳，可尝试设为 `False` |
 | `negative_prompt` | `低分辨率...` | 反向提示词，长度不超过约 500 字符 |
-| `size` | `2048*2048` | 输出分辨率，格式为 `宽*高` |
-| `n` | `1` | 输出图片数量；Qwen-Image-2.0 系列可选 1-6 张 |
+| `size` | `2048*2048` | 输出分辨率，格式为 `宽*高`；除 `qwen-image-edit` 外支持设置 |
+| `n` | `1` | 输出图片数量；Qwen-Image 2.0 系列可选 1-6 张 |
 | `seed` | `12345` | 可选随机种子，结果仍不保证完全一致 |
+
+图片输入要求：
+
+- 支持 1-3 张输入图片。
+- 多图输入时，图片顺序很重要；prompt 中应明确“图一”“图二”的含义。
+- 多图输入时，输出图像比例默认会参考最后一张输入图；若本项目希望输出比例更接近模特/手部图，建议显式设置 `size`，或根据业务调整图片顺序并实测效果。
+- 支持格式：JPG、JPEG、PNG、BMP、TIFF、WEBP、GIF；GIF 仅处理第一帧。
+- 推荐图片宽高均在 384-3072 像素之间。
+- 单张图片大小不超过 10MB。
+- 支持公网 URL、OSS 临时 URL、Base64 data URL。
 
 推荐分辨率：
 
 | 比例 | `size` |
 | --- | --- |
-| 1:1 | `2048*2048` |
-| 16:9 | `2688*1536` |
-| 9:16 | `1536*2688` |
-| 4:3 | `2368*1728` |
-| 3:4 | `1728*2368` |
+| 1:1 | `1024*1024`、`1536*1536`、`2048*2048` |
+| 2:3 | `768*1152`、`1024*1536` |
+| 3:2 | `1152*768`、`1536*1024` |
+| 3:4 | `960*1280`、`1080*1440` |
+| 4:3 | `1280*960`、`1440*1080` |
+| 9:16 | `720*1280`、`1080*1920` |
+| 16:9 | `1280*720`、`1920*1080` |
 
-Qwen-Image-2.0 系列输出图像总像素需在 `512*512` 到 `2048*2048` 等价像素范围内；使用官方推荐分辨率即可。
+Qwen-Image 2.0 系列输出图像总像素需在 `512*512` 到 `2048*2048` 等价像素范围内。
 
 ---
 
@@ -192,20 +239,27 @@ def generate_image(
     negative_prompt: str = "",
     strength: float = 0.75,
     guidance_scale: float = 7.5,
+    model: Optional[str] = None,
 ) -> bytes:
     ...
 ```
 
-迁移到 `qwen-image-2.0-pro` 时建议：
+接入 `qwen-image-2.0-pro` 图像编辑时建议：
 
 1. 保持 `BailianAIService.generate_image(...)` 对外签名不变，避免影响任务队列和 API 层。
-2. 内部调用从 `ImageGeneration.call(...)` 改为 `MultiModalConversation.call(...)`。
-3. 将项目已有 prompt 作为 `messages[0].content[0].text` 传入。
-4. 将 `settings.bailian_model` 传给 `model`，默认值为 `qwen-image-2.0-pro`。
-5. 将 `negative_prompt` 映射到 `negative_prompt` 参数。
-6. 将 `watermark` 固定为 `False`。
-7. 将 `size` 配置为 `2048*2048` 或新增配置项控制。
-8. 从返回结果中提取图片 URL，并下载为 bytes 返回。
+2. Qwen 分支内部使用 `MultiModalConversation.call(...)`。
+3. 将 `base_image_url` 解析为图一，表示模特/手部底图。
+4. 将 `accessory_image_url` 解析为图二，表示需要还原的手绳/配饰参考图。
+5. 使用现有 `_download_image(...)` + `_image_data_to_data_url(...)` 将本地上传文件转为 Base64 data URL。
+6. 构造 `messages[0].content` 时按顺序放入：
+   - `{"image": base_image}`
+   - `{"image": accessory_image}`
+   - `{"text": prompt}`
+7. 将 `negative_prompt` 映射到 SDK 参数。
+8. 将 `watermark` 固定为 `False`。
+9. 将 `n` 固定为 `1`。
+10. 将 `size` 配置为 `2048*2048` 或新增配置项控制。
+11. 从返回结果中提取图片 URL，并下载为 bytes 返回。
 
 示例封装核心逻辑：
 
@@ -217,26 +271,36 @@ from dashscope import MultiModalConversation
 
 dashscope.base_http_api_url = settings.bailian_base_url
 
+base_image = self._image_data_to_data_url(self._download_image(base_image_url))
+accessory_image = self._image_data_to_data_url(self._download_image(accessory_image_url))
+
+messages = [
+    {
+        "role": "user",
+        "content": [
+            {"image": base_image},
+            {"image": accessory_image},
+            {"text": prompt},
+        ],
+    }
+]
+
 response = MultiModalConversation.call(
     api_key=settings.bailian_api_key,
-    model=settings.bailian_model,
-    messages=[
-        {
-            "role": "user",
-            "content": [{"text": prompt}],
-        }
-    ],
-    result_format="message",
+    model="qwen-image-2.0-pro",
+    messages=messages,
     stream=False,
+    n=1,
     watermark=False,
     prompt_extend=True,
-    negative_prompt=negative_prompt or None,
+    negative_prompt=negative_prompt or " ",
     size="2048*2048",
 )
 
 if response.status_code != 200:
     raise RuntimeError(
-        f"百炼 API 调用失败: code={response.code}, message={response.message}"
+        f"百炼 API 调用失败: status_code={response.status_code}, "
+        f"code={response.code}, message={response.message}, request_id={response.request_id}"
     )
 
 result_url = extract_image_url(response)
@@ -247,23 +311,38 @@ return image_response.content
 
 ---
 
-## 7. 关于当前试戴业务的注意事项
+## 7. 当前试戴业务映射
 
 项目当前前端会选择：
 
-| 业务字段 | 当前含义 |
+| 业务字段 | Qwen 图像编辑输入 |
 | --- | --- |
-| `model.url` | 模特/手部图 |
-| `accessory.url` | 配饰图 |
-| `prompt` | 试戴生成说明 |
+| `model.url` | 图一：模特/手部底图，要求尽量保持不变 |
+| `accessory.url` | 图二：手绳/配饰参考图，要求尽量原样还原 |
+| `prompt` | 编辑指令：将图二配饰佩戴到图一对应位置 |
 
-`wan2.7-image-pro` 接入方式支持在 `Message.content` 中放入多张输入图；而 `qwen-image-2.0-pro` 本文档引用的同步示例以文生图为主，入口和参数结构已变为 `MultiModalConversation.call(...)`。
+推荐 prompt 结构：
 
-因此迁移时需要先确认目标能力：
+```text
+使用图一作为模特/手部底图，请保持图一的手型、手指、皮肤纹理、姿势、构图、背景和光线尽量不变。
+将图二中的手绳原样佩戴到图一手腕位置，图二手绳就是最终要佩戴的实物参考。
+必须尽量保持图二手绳的原始款式、编织结构、珠子/吊坠形状、材质、颜色、纹理和细节，不要重新设计、不要美化改款、不要替换成其他手链、不要生成额外饰品。
+手绳必须像真实饰品一样环绕并贴合手腕，有合理的前后遮挡、阴影和高光；只能做必要的缩放、透视弯曲、遮挡和光影融合。
+不要让手绳漂浮在皮肤上方，不要像贴纸一样平铺，不要和手腕分离。
+```
 
-- 如果只做文生图：按本文档直接接入 `qwen-image-2.0-pro`。
-- 如果仍要严格使用用户上传的模特图和配饰图进行图像编辑/试戴：需要结合阿里百炼“千问-图像编辑”接口或官方支持的图像输入格式进一步确认，再决定是否把 `model.url`、`accessory.url` 转成可传入的图像内容。
-- 不建议在未确认图像输入契约前，简单把 Wan2.7 的多图 `ImageGeneration.call(...)` 代码替换为 Qwen 模型名。
+推荐 negative prompt：
+
+```text
+低分辨率，低画质，模糊，手指畸形，手部变形，手腕变形，饰品漂浮，像贴纸，饰品与手腕分离，改变手绳款式，重新设计手绳，额外饰品，多余手链，错误遮挡，明显AI感
+```
+
+注意：
+
+- 若目标是“严格还原上传手绳”，Qwen 分支必须传入 `accessory_image_url`，不能只传文字 prompt。
+- `prompt_extend=True` 会增强描述，但也可能改写指令；如果发现手绳还原度下降，可尝试 `prompt_extend=False`。
+- 多图输入的顺序应与 prompt 中“图一”“图二”一致。
+- 当前业务建议顺序为：图一模特/手部图，图二手绳图，最后 text 编辑指令。
 
 ---
 
@@ -274,18 +353,22 @@ return image_response.content
 1. **缺少配置**：未配置 `BAILIAN_API_KEY`。
 2. **地域不匹配**：API Key 与 `BAILIAN_BASE_URL` 地域不一致。
 3. **依赖缺失或版本过低**：未安装 DashScope SDK。
-4. **提示词不合法**：提示词为空、过长或包含不支持内容。
-5. **参数不合法**：`size`、`n`、`seed` 等参数超出模型范围。
-6. **百炼调用失败**：`response.status_code != 200`，记录 `response.code`、`response.message`、`response.request_id`。
-7. **百炼无结果**：`output.choices` 为空或内容中没有 `image`。
-8. **结果下载失败**：生成 URL 过期、网络不可达或下载超时。
+4. **输入图片缺失**：Qwen 图像编辑至少需要 1 张输入图；当前试戴业务需要模特图和配饰图两张图。
+5. **输入图片格式不合法**：不是支持的图片格式，或 Base64 data URL 格式错误。
+6. **输入图片尺寸/大小不合法**：图片过小、过大或超过 10MB。
+7. **提示词不合法**：提示词为空、过长或包含不支持内容。
+8. **参数不合法**：`size`、`n`、`seed` 等参数超出模型范围。
+9. **百炼调用失败**：`response.status_code != 200`，记录 `response.code`、`response.message`、`response.request_id`。
+10. **百炼无结果**：`output.choices` 为空或内容中没有 `image`。
+11. **结果下载失败**：生成 URL 过期、网络不可达或下载超时。
 
 推荐错误信息：
 
 ```python
 if response.status_code != 200:
     raise RuntimeError(
-        f"百炼 API 调用失败: code={response.code}, message={response.message}, request_id={response.request_id}"
+        f"百炼 API 调用失败: status_code={response.status_code}, "
+        f"code={response.code}, message={response.message}, request_id={response.request_id}"
     )
 ```
 
@@ -293,19 +376,27 @@ if response.status_code != 200:
 
 ## 9. 落地接入步骤
 
-1. 保留 Wan2.7 指南，新增本文档作为 Qwen-Image-2.0-Pro 接入依据。
-2. 确认当前业务是否需要图像输入编辑能力；如需要，先补充官方图像编辑接口契约。
-3. 配置环境变量：`AI_PROVIDER=bailian`、`BAILIAN_API_KEY=...`、`BAILIAN_MODEL=qwen-image-2.0-pro`。
-4. 按地域配置 `BAILIAN_BASE_URL`。
-5. 将后端百炼 provider 的 SDK 调用入口改为 `MultiModalConversation.call(...)`。
+1. 配置环境变量：`AI_PROVIDER=bailian`、`BAILIAN_API_KEY=...`、`BAILIAN_MODEL=qwen-image-2.0-pro`。
+2. 按地域配置 `BAILIAN_BASE_URL`。
+3. 在后端百炼 provider 中使用 `MultiModalConversation.call(...)`。
+4. Qwen 分支构造多模态消息：`image(model)`、`image(accessory)`、`text(prompt)`。
+5. 复用现有图片下载与 data URL 编码逻辑，把本地上传图转为百炼支持的 Base64 data URL。
 6. 解析 `response.output.choices[*].message.content[*].image` 获取结果 URL。
 7. 下载结果图片并保存到 `RESULT_DIR`，返回 `/results/...` 给前端。
-8. 使用 mock provider 和真实 provider 分别验证前端任务创建、轮询和结果展示流程。
+8. 使用真实 provider 验证：
+   - 上传手部/模特图；
+   - 上传手绳图；
+   - 选择 `qwen-image-2.0-pro`；
+   - 检查生成结果是否尽量保留图一手部与图二手绳款式。
+9. 若手绳还原度不足，依次尝试：
+   - 强化 prompt 中“图二原样还原”的描述；
+   - 将 `prompt_extend` 改为 `False`；
+   - 调整 `size` 与输入图比例；
+   - 使用更清晰、背景更干净的手绳参考图。
 
 ---
 
 ## 10. 参考资料
 
-- 根目录资料：`阿里百炼qwen-image-2.0-pro接入.md`
-- Wan2.7 接入指南：`.doc/阿里百炼Wan2.7-Image-Pro同步调用接入指南.md`
+- 根目录资料：`阿里百炼wan2.7-image-pro接入.md`
 - 后端 provider：`backEnd/app/services/ai/bailian.py`

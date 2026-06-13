@@ -6,6 +6,7 @@ from typing import Literal, Optional, List
 InputSource = Literal["preset", "upload", "custom"]
 AccessoryType = Literal["bracelet"]
 UploadType = Literal["accessory", "model", "mask"]
+GenerationModel = Literal["wan2.7-image-pro", "qwen-image-2.0-pro"]
 
 
 class AccessoryResponse(BaseModel):
@@ -80,6 +81,8 @@ class SceneInput(BaseModel):
 class GenerateOptions(BaseModel):
     lighting: str = "natural"
     prompt: Optional[str] = None
+    negative_prompt: Optional[str] = None
+    model: Optional[GenerationModel] = None
     strength: float = Field(default=0.75, ge=0.0, le=1.0)
     guidance_scale: float = Field(default=7.5, ge=1.0, le=30.0)
 

@@ -1,4 +1,5 @@
 import base64
+import logging
 from io import BytesIO
 from typing import Optional
 
@@ -9,10 +10,14 @@ from app.config import get_settings
 from app.services.ai.base import BaseAIService
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+WAN_IMAGE_MODEL = "wan2.7-image-pro"
+QWEN_IMAGE_MODEL = "qwen-image-2.0-pro"
 
 
 class BailianAIService(BaseAIService):
-    """阿里百炼 Qwen-Image-2.0-Pro 图像生成同步调用服务"""
+    """阿里百炼图像生成同步调用服务"""
 
     def __init__(self):
         if not settings.bailian_api_key:
@@ -120,14 +125,20 @@ class BailianAIService(BaseAIService):
 
         raise RuntimeError("百炼 API 返回结果中未找到图片 URL")
 
-    def generate_image(
+    def _download_result_image(self, result_url: str) -> bytes:
+        try:
+            image_response = requests.get(result_url, timeout=60)
+            image_response.raise_for_status()
+            return image_response.content
+        except Exception as e:
+            raise RuntimeError(f"下载生成结果失败: {e}")
+
+    def _generate_wan_image(
         self,
+        model: str,
         base_image_url: str,
         accessory_image_url: Optional[str],
         prompt: str,
-        negative_prompt: str = "",
-        strength: float = 0.75,
-        guidance_scale: float = 7.5,
     ) -> bytes:
         try:
             import dashscope
@@ -140,7 +151,7 @@ class BailianAIService(BaseAIService):
 
         try:
             resp = ImageGeneration.call(
-                model=self.model,
+                model=model,
                 api_key=self.api_key,
                 messages=messages,
                 watermark=False,
@@ -148,17 +159,106 @@ class BailianAIService(BaseAIService):
                 size="2K",
             )
         except Exception as e:
-            raise RuntimeError(f"百炼 API 调用异常: {e}")
+            raise RuntimeError(f"百炼 Wan-Image API 调用异常: {e}")
 
         if resp.status_code != 200:
             raise RuntimeError(
-                f"百炼 API 调用失败: code={resp.code}, message={resp.message}"
+                f"百炼 Wan-Image API 调用失败: status_code={resp.status_code}, "
+                f"code={getattr(resp, 'code', '')}, message={getattr(resp, 'message', '')}, "
+                f"request_id={getattr(resp, 'request_id', '')}"
             )
 
-        result_url = self._extract_result_url(resp)
+        return self._download_result_image(self._extract_result_url(resp))
+
+    def _generate_qwen_image(
+        self,
+        model: str,
+        base_image_url: str,
+        accessory_image_url: Optional[str],
+        prompt: str,
+        negative_prompt: str = "",
+    ) -> bytes:
+        if not base_image_url:
+            raise RuntimeError("Qwen-Image 图像编辑需要提供模特/手部图")
+        if not accessory_image_url:
+            raise RuntimeError("Qwen-Image 图像编辑需要提供配饰图")
+
         try:
-            image_response = requests.get(result_url, timeout=60)
-            image_response.raise_for_status()
-            return image_response.content
+            import dashscope
+            from dashscope import MultiModalConversation
+        except ImportError:
+            raise RuntimeError("请安装 dashscope>=1.25.15: pip install -U dashscope")
+
+        dashscope.base_http_api_url = self.base_url
+        base_image = self._image_data_to_data_url(self._download_image(base_image_url))
+        accessory_image = self._image_data_to_data_url(
+            self._download_image(accessory_image_url)
+        )
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"image": base_image},
+                    {"image": accessory_image},
+                    {"text": prompt},
+                ],
+            }
+        ]
+
+        try:
+            resp = MultiModalConversation.call(
+                model=model,
+                api_key=self.api_key,
+                messages=messages,
+                stream=False,
+                n=1,
+                watermark=False,
+                prompt_extend=True,
+                negative_prompt=negative_prompt or " ",
+                size="2048*2048",
+            )
         except Exception as e:
-            raise RuntimeError(f"下载生成结果失败: {e}")
+            raise RuntimeError(f"百炼 Qwen-Image API 调用异常: {e}")
+
+        if resp.status_code != 200:
+            raise RuntimeError(
+                f"百炼 Qwen-Image API 调用失败: status_code={resp.status_code}, "
+                f"code={getattr(resp, 'code', '')}, message={getattr(resp, 'message', '')}, "
+                f"request_id={getattr(resp, 'request_id', '')}"
+            )
+
+        return self._download_result_image(self._extract_result_url(resp))
+
+    def generate_image(
+        self,
+        base_image_url: str,
+        accessory_image_url: Optional[str],
+        prompt: str,
+        negative_prompt: str = "",
+        strength: float = 0.75,
+        guidance_scale: float = 7.5,
+        model: Optional[str] = None,
+    ) -> bytes:
+        selected_model = model or self.model
+
+        if selected_model == QWEN_IMAGE_MODEL:
+            logger.info("使用 Qwen-Image 图像编辑同步调用，输入模特图和配饰图")
+            return self._generate_qwen_image(
+                model=selected_model,
+                base_image_url=base_image_url,
+                accessory_image_url=accessory_image_url,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+            )
+
+        if selected_model == WAN_IMAGE_MODEL:
+            return self._generate_wan_image(
+                model=selected_model,
+                base_image_url=base_image_url,
+                accessory_image_url=accessory_image_url,
+                prompt=prompt,
+            )
+
+        raise RuntimeError(
+            f"不支持的百炼模型: {selected_model}，仅支持 {WAN_IMAGE_MODEL} / {QWEN_IMAGE_MODEL}"
+        )

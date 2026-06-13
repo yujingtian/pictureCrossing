@@ -54,7 +54,7 @@ RATE_LIMIT_PER_DAY=50
 | --- | --- |
 | `mock` | 返回占位图，适合本地开发 |
 | `stable_diffusion` | 调用本地 Stable Diffusion WebUI `/sdapi/v1/img2img` |
-| `bailian` | 调用阿里百炼 `qwen-image-2.0-pro` |
+| `bailian` | 调用阿里百炼，支持 `qwen-image-2.0-pro` 与 `wan2.7-image-pro` |
 
 ### 阿里百炼
 
@@ -64,6 +64,13 @@ BAILIAN_API_KEY=sk-你的阿里百炼APIKey
 BAILIAN_MODEL=qwen-image-2.0-pro
 BAILIAN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
 ```
+
+`BAILIAN_MODEL` 支持：
+
+- `qwen-image-2.0-pro`：按 Qwen-Image 2.0 Pro 图像编辑文档使用 `MultiModalConversation.call(...)`，输入模特/手部图和配饰图；
+- `wan2.7-image-pro`：保留原有 `ImageGeneration.call(...)` 双图输入试戴逻辑。
+
+`AI_PROVIDER=bailian` 时，生成请求也可以通过 `options.model` 覆盖本次任务使用的模型；未传时使用 `BAILIAN_MODEL`。
 
 新加坡地域使用：
 
@@ -89,7 +96,7 @@ backEnd/
 │   ├── services/
 │   │   ├── ai/                     # AI provider 拆分实现
 │   │   │   ├── base.py             # BaseAIService 与通用 prompt
-│   │   │   ├── bailian.py          # 阿里百炼 ImageGeneration.call 接入
+│   │   │   ├── bailian.py          # 阿里百炼 Wan/Qwen 模型接入
 │   │   │   ├── stable_diffusion.py # Stable Diffusion WebUI 接入
 │   │   │   ├── mock.py             # Mock provider
 │   │   │   └── factory.py          # get_ai_service()
@@ -157,6 +164,8 @@ Content-Type: application/json
   "options": {
     "lighting": "natural",
     "prompt": "保持手部不变，只把手绳戴在手腕上",
+    "negative_prompt": "畸形手指、低清晰度、饰品漂浮",
+    "model": "wan2.7-image-pro",
     "strength": 0.75,
     "guidance_scale": 7.5
   }
@@ -166,7 +175,9 @@ Content-Type: application/json
 请求中的资源来源说明：
 
 - `source: "preset"`：推荐传 `id`，后端会按预设 ID 查询图片和名称；
-- `source: "upload"`：必须传上传接口返回的原图 `url`。
+- `source: "upload"`：必须传上传接口返回的原图 `url`；
+- `options.model` 可选值为 `wan2.7-image-pro`、`qwen-image-2.0-pro`；`AI_PROVIDER=bailian` 且不传时使用 `BAILIAN_MODEL`；
+- `options.negative_prompt` 会传给支持反向提示词的模型，当前 Qwen-Image 分支会按文档传入该字段。
 
 返回：
 
@@ -202,14 +213,18 @@ GET /api/generate/{task_id}
 
 ## 阿里百炼生成逻辑
 
-`app/services/ai/bailian.py` 使用新文档中的 Python SDK 同步调用方式：
+`app/services/ai/bailian.py` 会按模型选择不同的百炼同步调用方式。
+
+### `wan2.7-image-pro`
+
+保留原有双图输入试戴逻辑，使用 `ImageGeneration.call(...)`：
 
 ```python
 from dashscope.aigc.image_generation import ImageGeneration
 from dashscope.api_entities.dashscope_response import Message
 
 rsp = ImageGeneration.call(
-    model=settings.bailian_model,
+    model="wan2.7-image-pro",
     api_key=settings.bailian_api_key,
     messages=[message],
     watermark=False,
@@ -224,13 +239,50 @@ rsp = ImageGeneration.call(
 2. 图2：配饰图；
 3. 文本 prompt：说明把图2配饰戴到图1对应位置。
 
-实现细节：
+### `qwen-image-2.0-pro`
+
+按 Qwen-Image 2.0 Pro 图像编辑文档使用 `MultiModalConversation.call(...)` 同步多图输入调用：
+
+```python
+from dashscope import MultiModalConversation
+
+rsp = MultiModalConversation.call(
+    model="qwen-image-2.0-pro",
+    api_key=settings.bailian_api_key,
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"image": base_image},
+                {"image": accessory_image},
+                {"text": prompt},
+            ],
+        }
+    ],
+    stream=False,
+    n=1,
+    watermark=False,
+    prompt_extend=True,
+    negative_prompt=negative_prompt or " ",
+    size="2048*2048",
+)
+```
+
+输入内容顺序：
+
+1. 图1：模特/手部图，会转为 Base64 data URL；
+2. 图2：配饰图，会转为 Base64 data URL；
+3. 文本 prompt：说明把图2配饰原样佩戴到图1对应位置。
+
+后端会为 Qwen 构建包含“图一/图二”的图像编辑 prompt，强调保持图一手部不变并还原图二手绳款式。
+
+通用实现细节：
 
 - 后端读取上传原图，不使用 `_thumb` 缩略图；
-- 支持 JPEG/JPG/PNG/BMP/WEBP；
-- MPO 图片会取首帧并转成 JPEG；
+- Wan 和 Qwen 分支都会把输入图转为百炼支持的 Base64 data URL；
+- 支持 JPEG/JPG/PNG/BMP/WEBP，MPO 图片会取首帧并转成 JPEG；
 - 会应用 EXIF 方向，避免手机照片上下颠倒；
-- 结果 URL 有效期有限，后端会立即下载并保存到 `results/`。
+- 百炼返回的结果 URL 有效期有限，后端会立即下载并保存到 `results/`。
 
 ## 任务队列说明
 

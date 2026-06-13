@@ -18,6 +18,7 @@ class MockAIService(BaseAIService):
         negative_prompt: str = "",
         strength: float = 0.75,
         guidance_scale: float = 7.5,
+        model: Optional[str] = None,
     ) -> bytes:
         print(f"[Mock AI] 图生图生成")
         print(f"Prompt: {prompt[:50]}...")

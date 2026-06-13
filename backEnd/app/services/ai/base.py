@@ -12,6 +12,7 @@ class BaseAIService:
         negative_prompt: str = "",
         strength: float = 0.75,
         guidance_scale: float = 7.5,
+        model: Optional[str] = None,
     ) -> bytes:
         """
         图生图：基于基础图片（模特）和配饰图片，生成佩戴配饰后的效果图
@@ -23,6 +24,7 @@ class BaseAIService:
             negative_prompt: 反向提示词
             strength: 重绘强度 0.0-1.0
             guidance_scale: 提示词引导强度
+            model: 请求级模型覆盖
 
         Returns:
             生成图片的二进制数据

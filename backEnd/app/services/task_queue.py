@@ -12,6 +12,7 @@ from app.database import SessionLocal
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+QWEN_IMAGE_MODEL = "qwen-image-2.0-pro"
 
 
 class TaskQueue:
@@ -72,6 +73,8 @@ class TaskQueue:
                 "error": None,
                 "options": {
                     "prompt": options.get("prompt"),
+                    "negative_prompt": options.get("negative_prompt") or "",
+                    "model": options.get("model"),
                     "strength": options.get("strength", 0.75),
                     "guidance_scale": options.get("guidance_scale", 7.5),
                 }
@@ -147,12 +150,56 @@ class TaskQueue:
                 model_url = model.image_url
         return model_url
 
+    def _build_generation_prompt(
+        self,
+        generation_model: Optional[str],
+        accessory_type: str,
+        accessory_name: str,
+        scene_template: str,
+        lighting: str,
+    ) -> str:
+        if generation_model != QWEN_IMAGE_MODEL:
+            return self.ai_service.build_prompt(
+                accessory_type,
+                accessory_name,
+                scene_template,
+                lighting
+            )
+
+        type_names = {
+            "bracelet": "手绳",
+            "necklace": "项链",
+            "earring": "耳饰",
+            "ring": "戒指"
+        }
+        lighting_desc = {
+            "natural": "自然光，柔和明亮",
+            "warm": "暖色调，温馨浪漫",
+            "cool": "冷色调，时尚高级"
+        }
+        accessory_type_name = type_names.get(accessory_type, "配饰")
+        lighting_text = lighting_desc.get(lighting, lighting_desc["natural"])
+
+        return f"""使用图一作为模特/手部底图，请保持图一的手型、手指、皮肤纹理、姿势、构图、背景和光线尽量不变。
+将图二中的{accessory_type_name}原样佩戴到图一手腕位置，图二{accessory_type_name}就是最终要佩戴的实物参考。
+{accessory_type_name}的款式是：{accessory_name}。
+场景：{scene_template}。
+光线：{lighting_text}。
+必须尽量保持图二{accessory_type_name}的原始款式、编织结构、珠子/吊坠形状、材质、颜色、纹理和细节，不要重新设计、不要美化改款、不要简化、不要替换成其他手链、不要生成额外饰品。
+{accessory_type_name}必须像真实饰品一样环绕并贴合手腕，有合理的前后遮挡、阴影和高光；只能做必要的缩放、透视弯曲、遮挡和光影融合。
+不要让{accessory_type_name}漂浮在皮肤上方，不要像贴纸一样平铺，不要和手腕分离。""".strip()
+
     def _execute_task(self, task_id: str):
         db = SessionLocal()
         try:
             task_options = self._get_task_options(task_id)
 
             custom_prompt = (task_options.get("prompt") or "").strip()
+            negative_prompt = (task_options.get("negative_prompt") or "").strip()
+            requested_model = task_options.get("model")
+            generation_model = None
+            if settings.ai_provider == "bailian":
+                generation_model = requested_model or settings.bailian_model
             strength = task_options.get("strength", 0.75)
             guidance_scale = task_options.get("guidance_scale", 7.5)
 
@@ -170,7 +217,8 @@ class TaskQueue:
             scene_template = self._resolve_scene_template(db, task)
             self._update_task_info(task_id, progress=50)
 
-            prompt = self.ai_service.build_prompt(
+            prompt = self._build_generation_prompt(
+                generation_model,
                 task.accessory_type,
                 accessory_name,
                 scene_template,
@@ -178,7 +226,9 @@ class TaskQueue:
             )
             if custom_prompt:
                 prompt = f"{prompt}\n用户补充要求：{custom_prompt}"
-            logger.debug("[AI Prompt][%s]\n%s", task_id, prompt)
+            if generation_model == QWEN_IMAGE_MODEL:
+                logger.info("任务 %s 使用 Qwen-Image 图像编辑 prompt，输入模特图和配饰图", task_id)
+            logger.debug("[AI Prompt][%s][%s]\n%s", task_id, generation_model, prompt)
             task.prompt = prompt
             db.commit()
 
@@ -189,8 +239,10 @@ class TaskQueue:
                 base_image_url=model_url,
                 accessory_image_url=accessory_url,
                 prompt=prompt,
+                negative_prompt=negative_prompt,
                 strength=strength,
-                guidance_scale=guidance_scale
+                guidance_scale=guidance_scale,
+                model=generation_model
             )
 
             result_url = self.storage.save_result(image_data, task_id)

@@ -32,6 +32,7 @@ class StableDiffusionAIService(BaseAIService):
         negative_prompt: str = "",
         strength: float = 0.75,
         guidance_scale: float = 7.5,
+        model: Optional[str] = None,
     ) -> bytes:
         base_image_data = self._download_image(base_image_url)
         base64_image = base64.b64encode(base_image_data).decode()
