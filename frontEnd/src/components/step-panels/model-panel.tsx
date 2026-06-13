@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Upload, Camera, Check, User, Loader2 } from 'lucide-react'
+import { Upload, Camera, Check, User, Loader2, X } from 'lucide-react'
+
+import { CameraCaptureDialog, isLiveCameraSupported } from '@/components/camera-capture-dialog'
 import { ImagePreview } from '@/components/image-preview'
 import { cn } from '@/lib/utils'
 import {
@@ -12,7 +14,8 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
-import { getPresetModels, uploadImage } from '@/services/api'
+import { useImageUpload } from '@/hooks/use-image-upload'
+import { getPresetModels } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
 import type { AccessoryType, ModelInput, ModelResponse } from '@/types/api'
 
@@ -56,8 +59,14 @@ export function ModelPanel({
   )
   const [presets, setPresets] = useState<ModelResponse[]>([])
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const { uploading, uploadFile, handleFileInputChange } = useImageUpload({
+    type: 'model',
+    onUploaded: setSelected,
+    errorTitle: '上传图片失败',
+  })
   // 默认为推荐分类，但用户可以切换
   const [activeCategory, setActiveCategory] = useState<string>(
     recommendedCategoryByType[accessoryType]
@@ -68,38 +77,20 @@ export function ModelPanel({
     setActiveCategory(category)
   }
 
-  // 处理文件上传
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    try {
-      const response = await uploadImage(file, 'model')
-      if (response.success && response.data) {
-        setSelected({
-          source: 'upload',
-          id: response.data.file_id,
-          url: response.data.url,
-        })
-      }
-    } catch (error) {
-      console.error('上传图片失败', error)
-      toast({
-        title: '上传图片失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
-        variant: 'destructive',
-      })
-    } finally {
-      setUploading(false)
-      // 清空 input 以便可以再次选择同一个文件
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+  const handleCameraClick = () => {
+    if (isLiveCameraSupported()) {
+      setCameraOpen(true)
+      return
     }
+
+    cameraInputRef.current?.click()
   }
 
   const selectedUrl = selected?.url ?? null
+
+  useEffect(() => {
+    setSelected(selectedSelection ?? (selectedImage ? { source: 'upload', url: selectedImage } : null))
+  }, [selectedImage, selectedSelection])
 
   const handleConfirm = () => {
     onConfirm(selected)
@@ -154,8 +145,16 @@ export function ModelPanel({
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleFileSelect}
+              onChange={handleFileInputChange}
               accept="image/*"
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={cameraInputRef}
+              onChange={handleFileInputChange}
+              accept="image/*"
+              capture="environment"
               className="hidden"
             />
             <div className="flex gap-2">
@@ -174,9 +173,17 @@ export function ModelPanel({
                 </span>
                 <span className="text-[9px] text-muted-foreground/70">支持任意部位</span>
               </button>
-              <button className="flex-1 h-20 rounded-2xl border-2 border-dashed border-border/80 bg-secondary/30 flex flex-col items-center justify-center gap-1 transition-colors hover:border-primary/40 hover:bg-primary/5">
-                <Camera className="w-4 h-4 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">拍照</span>
+              <button
+                onClick={handleCameraClick}
+                disabled={uploading}
+                className="flex-1 h-20 rounded-2xl border-2 border-dashed border-border/80 bg-secondary/30 flex flex-col items-center justify-center gap-1 transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Camera className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className="text-[10px] text-muted-foreground">{uploading ? '上传中...' : '拍照'}</span>
                 <span className="text-[9px] text-muted-foreground/70">实时拍摄</span>
               </button>
             </div>
@@ -185,22 +192,32 @@ export function ModelPanel({
           {selected && (
             <div className="mb-4">
               <h4 className="text-[12px] font-medium text-muted-foreground mb-2">当前选择</h4>
-              <ImagePreview
-                src={selectedUrl ?? ''}
-                alt="当前选择的模特"
-                triggerClassName="w-32 aspect-[4/3] rounded-xl border-2 border-primary shadow-soft-lg"
-              >
-                <img
+              <div className="relative w-32 aspect-[4/3]">
+                <ImagePreview
                   src={selectedUrl ?? ''}
                   alt="当前选择的模特"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="w-3 h-3 text-primary-foreground" />
+                  triggerClassName="h-full w-full rounded-xl border-2 border-primary shadow-soft-lg"
+                >
+                  <img
+                    src={selectedUrl ?? ''}
+                    alt="当前选择的模特"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="w-3 h-3 text-primary-foreground" />
+                    </div>
                   </div>
-                </div>
-              </ImagePreview>
+                </ImagePreview>
+                <button
+                  type="button"
+                  aria-label="删除当前选择的模特"
+                  onClick={() => setSelected(null)}
+                  className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white shadow-soft backdrop-blur-sm transition-colors hover:bg-black/75"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -266,7 +283,8 @@ export function ModelPanel({
                     key={model.id}
                     src={model.image_url}
                     alt={model.name}
-                    onOpenPreview={() => setSelected({
+                    confirmLabel="选择这张模特"
+                    onConfirm={() => setSelected({
                       source: 'preset',
                       id: model.id,
                       url: model.image_url,
@@ -314,6 +332,16 @@ export function ModelPanel({
             </Button>
           </DrawerClose>
         </DrawerFooter>
+
+        <CameraCaptureDialog
+          open={cameraOpen}
+          onOpenChange={setCameraOpen}
+          title="拍摄模特照片"
+          description="请对准需要试戴的部位，拍照后将上传为当前模特。"
+          uploading={uploading}
+          initialFacingMode="environment"
+          onCaptureFile={uploadFile}
+        />
       </DrawerContent>
     </Drawer>
   )

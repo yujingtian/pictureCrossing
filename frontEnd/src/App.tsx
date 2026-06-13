@@ -170,6 +170,8 @@ export default function App() {
           accessoryImage={selectedAccessory?.url}
           modelImage={selectedModel?.url}
           accessoryType={selectedAccessoryType}
+          onRemoveAccessory={() => setSelectedAccessory(null)}
+          onRemoveModel={() => setSelectedModel(null)}
         />
 
         {/* 状态提示 */}

@@ -1,6 +1,6 @@
 # frontEnd
 
-AI 试戴间前端工程。用户可以选择或上传配饰、模特/手部图，并调用后端生成虚拟试戴结果。
+AI 试戴间前端工程。用户可以选择、上传或拍照录入配饰、模特/手部图，并调用后端生成虚拟试戴结果。
 
 ## 技术栈
 
@@ -86,13 +86,15 @@ frontEnd/src/
 ├── types/api.ts                    # 前后端 API 类型
 ├── components/
 │   ├── main-canvas.tsx             # 主预览区域
-│   ├── image-preview.tsx           # 图片点击放大预览弹窗
-│   ├── input-section.tsx           # 两步选择入口，缩略图可点击放大且不触发步骤弹框
+│   ├── camera-capture-dialog.tsx   # 摄像头拍照弹窗，拍照后复用上传链路
+│   ├── image-preview.tsx           # 图片放大预览弹窗，支持手势缩放/拖动和确认选择
+│   ├── input-section.tsx           # 两步选择入口，缩略图可放大/删除且不触发步骤弹框
 │   ├── bottom-action-bar.tsx       # 生成按钮
 │   └── step-panels/
-│       ├── accessory-panel.tsx     # 配饰预设/上传，弹框内图片可点击放大
-│       ├── model-panel.tsx         # 模特/手部图预设/上传，弹框内图片可点击放大
+│       ├── accessory-panel.tsx     # 配饰预设/上传/拍照，当前选择可删除
+│       ├── model-panel.tsx         # 模特/手部图预设/上传/拍照，当前选择可删除
 │       └── scene-panel.tsx         # 场景选择（当前主流程未启用）
+├── hooks/use-image-upload.ts       # 图片上传状态与上传资源选择封装
 └── hooks/use-toast.ts              # 错误/状态提示
 ```
 

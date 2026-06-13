@@ -71,7 +71,8 @@ export function BraceletPanel({ open, onOpenChange, onConfirm, selectedImage }: 
                   key={bracelet.id}
                   src={bracelet.image}
                   alt={bracelet.name}
-                  onOpenPreview={() => setSelected(bracelet.image)}
+                  confirmLabel="选择这张手绳"
+                  onConfirm={() => setSelected(bracelet.image)}
                   triggerClassName={cn(
                     "aspect-square rounded-xl border-2 transition-all",
                     selected === bracelet.image
