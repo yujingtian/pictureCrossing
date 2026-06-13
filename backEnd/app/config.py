@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/db.sqlite"
     upload_dir: str = "./uploads"
     result_dir: str = "./results"
+    static_dir: str = "./static"
     max_upload_size: int = 10 * 1024 * 1024
 
     rate_limit_enabled: bool = True
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     ai_provider: Literal["mock", "stable_diffusion", "bailian"] = "mock"
     # 阿里百炼配置
     bailian_api_key: str = ""
-    bailian_model: str = "wan2.7-image-pro"
+    bailian_model: str = "qwen-image-2.0-pro"
     bailian_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
     # Stable Diffusion 配置
     stable_diffusion_api_url: str = "http://localhost:7860"

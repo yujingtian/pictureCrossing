@@ -34,7 +34,7 @@ export function BottomActionBar({ isActive, isLoading, onGenerate }: BottomActio
         {/* 提示文字 */}
         {!isActive && (
           <p className="text-center text-[11px] text-muted-foreground mt-2">
-            请先完成上方三个步骤
+            请先完成上方两个步骤
           </p>
         )}
       </div>

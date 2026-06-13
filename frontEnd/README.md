@@ -1,6 +1,6 @@
 # frontEnd
 
-AI 试戴间前端工程。用户可以选择或上传配饰、模特/手部图、场景，并调用后端生成虚拟试戴结果。
+AI 试戴间前端工程。用户可以选择或上传配饰、模特/手部图，并调用后端生成虚拟试戴结果。
 
 ## 技术栈
 
@@ -25,6 +25,14 @@ npm run dev
 ```text
 http://localhost:5173
 ```
+
+本地开发服务已监听 `0.0.0.0`，同一局域网设备可通过开发机本地 IP 访问：
+
+```text
+http://<你的本地 IP>:5173
+```
+
+例如 Windows 可用 `ipconfig` 查看本机 IPv4 地址；访问前请确保系统防火墙允许 5173 端口入站。
 
 构建：
 
@@ -52,7 +60,7 @@ npm run preview
 本地开发时需要满足以下任一方式：
 
 1. 前端和后端通过同一域名访问，并由反向代理转发 `/api`；
-2. 在 Vite 中配置 `/api` proxy 到 `http://localhost:8000`；
+2. 在 Vite 中配置 `/api`、`/uploads`、`/results`、`/static` proxy 到 `http://localhost:8000`；
 3. 直接通过后端静态服务托管前端构建产物。
 
 当前 `src/services/api.ts` 默认使用：
@@ -78,12 +86,12 @@ frontEnd/src/
 ├── types/api.ts                    # 前后端 API 类型
 ├── components/
 │   ├── main-canvas.tsx             # 主预览区域
-│   ├── input-section.tsx           # 三步选择入口
+│   ├── input-section.tsx           # 两步选择入口
 │   ├── bottom-action-bar.tsx       # 生成按钮
 │   └── step-panels/
 │       ├── accessory-panel.tsx     # 配饰预设/上传
 │       ├── model-panel.tsx         # 模特/手部图预设/上传
-│       └── scene-panel.tsx         # 场景选择
+│       └── scene-panel.tsx         # 场景选择（当前主流程未启用）
 └── hooks/use-toast.ts              # 错误/状态提示
 ```
 

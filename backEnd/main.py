@@ -28,8 +28,10 @@ app.add_middleware(
 
 os.makedirs(settings.upload_dir, exist_ok=True)
 os.makedirs(settings.result_dir, exist_ok=True)
+os.makedirs(settings.static_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 app.mount("/results", StaticFiles(directory=settings.result_dir), name="results")
+app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 
 app.include_router(presets.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")

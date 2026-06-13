@@ -40,6 +40,7 @@ http://localhost:8000/docs
 DATABASE_URL=sqlite:///./data/db.sqlite
 UPLOAD_DIR=./uploads
 RESULT_DIR=./results
+STATIC_DIR=./static
 
 AI_PROVIDER=mock
 RATE_LIMIT_ENABLED=true
@@ -53,14 +54,14 @@ RATE_LIMIT_PER_DAY=50
 | --- | --- |
 | `mock` | 返回占位图，适合本地开发 |
 | `stable_diffusion` | 调用本地 Stable Diffusion WebUI `/sdapi/v1/img2img` |
-| `bailian` | 调用阿里百炼 `wan2.7-image-pro` |
+| `bailian` | 调用阿里百炼 `qwen-image-2.0-pro` |
 
 ### 阿里百炼
 
 ```env
 AI_PROVIDER=bailian
 BAILIAN_API_KEY=sk-你的阿里百炼APIKey
-BAILIAN_MODEL=wan2.7-image-pro
+BAILIAN_MODEL=qwen-image-2.0-pro
 BAILIAN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
 ```
 
@@ -102,6 +103,7 @@ backEnd/
 │   └── schemas.py                  # Pydantic schema
 ├── uploads/                        # 上传图片，运行时生成
 ├── results/                        # 生成结果，运行时生成
+├── static/                         # 预设占位图等静态资源，运行时生成
 └── data/                           # SQLite 数据，运行时生成
 ```
 

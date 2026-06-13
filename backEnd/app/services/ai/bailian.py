@@ -12,7 +12,7 @@ settings = get_settings()
 
 
 class BailianAIService(BaseAIService):
-    """阿里百炼 Wan2.7-Image-Pro 图像编辑同步调用服务"""
+    """阿里百炼 Qwen-Image-2.0-Pro 图像生成同步调用服务"""
 
     def __init__(self):
         if not settings.bailian_api_key:

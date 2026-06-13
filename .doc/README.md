@@ -8,17 +8,18 @@ AI 试戴间项目，用于将上传/选择的手绳、项链、耳饰、戒指�
 pictureCrossing/
 ├── frontEnd/   # Vite + React 前端
 ├── backEnd/    # FastAPI + SQLite 后端
-└── 阿里百炼PythonSDK同步调用接入指南.md
+├── 阿里百炼Wan2.7-Image-Pro同步调用接入指南.md     # Wan2.7 接入指南
+└── 阿里百炼Qwen-Image-2.0-Pro同步调用接入指南.md   # Qwen-Image-2.0-Pro 接入指南
 ```
 
 ## 当前能力
 
-- 前端支持选择/上传配饰、模特/手部图片、场景，并提交生成任务。
+- 前端主流程支持选择/上传配饰和模特/手部图片，并提交生成任务；场景能力当前保留为后端接口和未接入主流程的前端扩展点。
 - 后端提供预设数据、图片上传、生成任务创建和任务状态查询接口。
 - AI 生成支持多 provider：
   - `mock`：本地开发占位图；
   - `stable_diffusion`：本地 Stable Diffusion WebUI；
-  - `bailian`：阿里百炼 `wan2.7-image-pro`，通过 Python SDK 同步调用。
+  - `bailian`：阿里百炼 `qwen-image-2.0-pro`，通过 Python SDK 同步调用。
 
 ## 快速启动
 
@@ -66,7 +67,7 @@ http://localhost:5173
 ```env
 AI_PROVIDER=bailian
 BAILIAN_API_KEY=sk-你的阿里百炼APIKey
-BAILIAN_MODEL=wan2.7-image-pro
+BAILIAN_MODEL=qwen-image-2.0-pro
 BAILIAN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
 ```
 
@@ -78,7 +79,10 @@ BAILIAN_BASE_URL=https://dashscope-intl.aliyuncs.com/api/v1
 
 注意：北京和新加坡地域的 API Key 与请求地址独立，不能混用。
 
-更多接入细节见：[阿里百炼PythonSDK同步调用接入指南.md](阿里百炼PythonSDK同步调用接入指南.md)。
+接入细节：
+
+- Wan2.7：见 [阿里百炼Wan2.7-Image-Pro同步调用接入指南.md](阿里百炼Wan2.7-Image-Pro同步调用接入指南.md)。
+- Qwen-Image-2.0-Pro：见 [阿里百炼Qwen-Image-2.0-Pro同步调用接入指南.md](阿里百炼Qwen-Image-2.0-Pro同步调用接入指南.md)。
 
 ## 关键接口
 

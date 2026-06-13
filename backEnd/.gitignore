@@ -28,6 +28,7 @@ ENV/
 
 uploads/
 results/
+static/
 data/*.sqlite
 data/*.sqlite3
 

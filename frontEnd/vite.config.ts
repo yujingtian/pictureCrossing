@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -21,6 +22,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/results': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/static': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },

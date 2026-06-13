@@ -8,7 +8,7 @@
 | 技术栈 | Python + FastAPI + SQLite |
 | 创建日期 | 2026-05-31 |
 | 文档版本 | v1.1 |
-| 更新内容 | 新增阿里百炼 Wan2.7-Image-Pro 图生图方案 |
+| 更新内容 | 新增阿里百炼 Qwen-Image-2.0-Pro 图生图方案 |
 
 ---
 
@@ -37,7 +37,7 @@
 | 速率限制 | slowapi + Limiter | 接口防刷机制 |
 | 文件存储 | 本地文件系统 | 简单直接 |
 | 图片处理 | Pillow | 图片裁剪、压缩、遮罩生成 |
-| AI 服务 | Mock / Stable Diffusion / 阿里百炼 (Wan2.7-Image-Pro) | 默认 Mock，推荐使用阿里百炼 |
+| AI 服务 | Mock / Stable Diffusion / 阿里百炼 (Qwen-Image-2.0-Pro) | 默认 Mock，推荐使用阿里百炼 |
 
 ### 核心依赖 (requirements.txt)
 
@@ -268,13 +268,14 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/db.sqlite"
     upload_dir: str = "./uploads"
     result_dir: str = "./results"
+    static_dir: str = "./static"
     max_upload_size: int = 10 * 1024 * 1024
     rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 5
     rate_limit_per_day: int = 50
     ai_provider: Literal["mock", "stable_diffusion", "bailian"] = "mock"
     bailian_api_key: str = ""
-    bailian_model: str = "wanx2.7-image-pro"
+    bailian_model: str = "qwen-image-2.0-pro"
     stable_diffusion_api_url: str = "http://localhost:7860"
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     class Config:
@@ -585,7 +586,7 @@ class StableDiffusionAIService(BaseAIService):
             raise RuntimeError(f"Stable Diffusion API 调用失败: {e}")
 
 class BailianAIService(BaseAIService):
-    """阿里百炼 Wan2.7-Image-Pro 图生图服务"""
+    """阿里百炼 Qwen-Image-2.0-Pro 图生图服务"""
 
     def __init__(self):
         if not settings.bailian_api_key:
@@ -1101,8 +1102,10 @@ app.add_middleware(
 
 os.makedirs(settings.upload_dir, exist_ok=True)
 os.makedirs(settings.result_dir, exist_ok=True)
+os.makedirs(settings.static_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 app.mount("/results", StaticFiles(directory=settings.result_dir), name="results")
+app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 
 app.include_router(presets.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
@@ -1139,9 +1142,16 @@ if __name__ == "__main__":
 ### `app/core/init_data.py`
 
 ```python
+from pathlib import Path
+
+from PIL import Image, ImageDraw
 from sqlalchemy.orm import Session
+
+from app.config import get_settings
 from app.models import PresetAccessory, PresetModel, PresetScene
 from app.database import SessionLocal
+
+settings = get_settings()
 
 DEFAULT_DATA = {
     "accessories": [
@@ -1149,14 +1159,14 @@ DEFAULT_DATA = {
             "id": "bracelet_001",
             "type": "bracelet",
             "name": "经典珍珠手链",
-            "image_url": "https://via.placeholder.com/200x200/f5f0e8/333333?text=Pearl+Bracelet",
+            "image_url": "/static/presets/bracelet_001.png",
             "sort_order": 1
         },
         {
             "id": "bracelet_002",
             "type": "bracelet",
             "name": "金色链条手链",
-            "image_url": "https://via.placeholder.com/200x200/f5f0e8/333333?text=Gold+Bracelet",
+            "image_url": "/static/presets/bracelet_002.png",
             "sort_order": 2
         }
     ],
@@ -1165,7 +1175,8 @@ DEFAULT_DATA = {
             "id": "wrist_001",
             "category": "wrist",
             "name": "优雅手腕",
-            "image_url": "https://via.placeholder.com/400x500/e8e0d0/333333?text=Wrist+Model"
+            "image_url": "/static/presets/wrist_001.png",
+            "sort_order": 1
         }
     ],
     "scenes": [
@@ -1173,30 +1184,38 @@ DEFAULT_DATA = {
             "id": "scene_studio",
             "category": "studio",
             "name": "专业摄影棚",
-            "image_url": "https://via.placeholder.com/400x300/d0d8e0/333333?text=Studio",
-            "prompt_template": "专业摄影棚背景，柔和的打光"
+            "image_url": "/static/presets/scene_studio.png",
+            "prompt_template": "专业摄影棚背景，柔和的打光",
+            "sort_order": 1
         }
     ]
 }
 
+def _create_preset_images() -> None:
+    preset_dir = Path(settings.static_dir) / "presets"
+    preset_dir.mkdir(parents=True, exist_ok=True)
+    # 启动初始化时使用 Pillow 生成默认 PNG 预设图；已存在的文件不会覆盖。
+
+
+def _upsert(db: Session, model_class, data: dict) -> None:
+    existing = db.query(model_class).filter_by(id=data["id"]).first()
+    if existing:
+        for key, value in data.items():
+            setattr(existing, key, value)
+    else:
+        db.add(model_class(**data))
+
+
 def ensure_initial_data():
+    _create_preset_images()
     db = SessionLocal()
     try:
         for acc_data in DEFAULT_DATA["accessories"]:
-            existing = db.query(PresetAccessory).filter_by(id=acc_data["id"]).first()
-            if not existing:
-                acc = PresetAccessory(**acc_data)
-                db.add(acc)
+            _upsert(db, PresetAccessory, acc_data)
         for model_data in DEFAULT_DATA["models"]:
-            existing = db.query(PresetModel).filter_by(id=model_data["id"]).first()
-            if not existing:
-                model = PresetModel(**model_data)
-                db.add(model)
+            _upsert(db, PresetModel, model_data)
         for scene_data in DEFAULT_DATA["scenes"]:
-            existing = db.query(PresetScene).filter_by(id=scene_data["id"]).first()
-            if not existing:
-                scene = PresetScene(**scene_data)
-                db.add(scene)
+            _upsert(db, PresetScene, scene_data)
         db.commit()
         print("初始化数据已加载")
     except Exception as e:
@@ -1216,13 +1235,14 @@ def ensure_initial_data():
 DATABASE_URL=sqlite:///./data/db.sqlite
 UPLOAD_DIR=./uploads
 RESULT_DIR=./results
+STATIC_DIR=./static
 MAX_UPLOAD_SIZE=10485760
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_PER_MINUTE=5
 RATE_LIMIT_PER_DAY=50
 AI_PROVIDER=mock
 BAILIAN_API_KEY=your_bailian_api_key_here
-BAILIAN_MODEL=wanx2.7-image-pro
+BAILIAN_MODEL=qwen-image-2.0-pro
 STABLE_DIFFUSION_API_URL=http://localhost:7860
 CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
 DEBUG=true
@@ -1257,7 +1277,7 @@ cd backend
 python main.py
 ```
 
-### 10.5 使用阿里百炼 Wan2.7-Image-Pro (推荐)
+### 10.5 使用阿里百炼 Qwen-Image-2.0-Pro (推荐)
 
 1. 前往 [阿里云百炼控制台](https://bailian.console.aliyun.com/) 获取 API Key
 2. 修改 `.env` 文件：
@@ -1292,7 +1312,7 @@ python main.py
 |------------|------|---------|
 | `mock` | 模拟服务（默认） | 无 |
 | `stable_diffusion` | 本地 Stable Diffusion WebUI | `STABLE_DIFFUSION_API_URL` |
-| `bailian` | 阿里百炼 Wan2.7-Image-Pro (推荐) | `BAILIAN_API_KEY` |
+| `bailian` | 阿里百炼 Qwen-Image-2.0-Pro (推荐) | `BAILIAN_API_KEY` |
 
 ### 阿里百炼配置说明
 
@@ -1304,11 +1324,11 @@ python main.py
    BAILIAN_API_KEY=sk-xxxxxxxxxx
    ```
 
-**Wan2.7-Image-Pro 优势：**
-- 高质量图像生成，细节丰富
-- 图生图模式，支持参考图控制
-- 商业摄影级输出效果
-- 稳定的 API 服务
+**百炼 provider 接入特点：**
+- 使用配置项 `BAILIAN_MODEL` 指定模型，当前默认值为 `qwen-image-2.0-pro`
+- 通过同步调用接入图像生成能力
+- 支持使用模特图和配饰图作为参考输入
+- 生成结果由后端下载并保存到本地结果目录
 
 ---
 

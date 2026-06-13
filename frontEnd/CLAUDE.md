@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-这是一个"AI 试戴间"应用 - 用于手绳、项链、耳饰、戒指等配饰的虚拟试戴。用户可以选择配饰、模特和场景来生成虚拟试戴效果图。
+这是一个"AI 试戴间"应用 - 用于手绳、项链、耳饰、戒指等配饰的虚拟试戴。当前前端主流程为选择配饰和模特两步，然后生成虚拟试戴效果图。
 
 ## 技术栈
 
@@ -45,13 +45,13 @@ frontEnd/
 │   │   ├── step-panels/    # 选择抽屉面板
 │   │   │   ├── accessory-panel.tsx  # 配饰类型和预设选择
 │   │   │   ├── model-panel.tsx      # 模特选择
-│   │   │   ├── scene-panel.tsx      # 场景选择
+│   │   │   ├── scene-panel.tsx      # 场景选择（当前主流程未启用）
 │   │   │   ├── bracelet-panel.tsx   # 手绳选择面板
 │   │   │   ├── wrist-panel.tsx      # 手腕选择面板
 │   │   │   └── index.ts
 │   │   ├── top-header.tsx           # 顶部固定导航
 │   │   ├── main-canvas.tsx          # 图片预览区域
-│   │   ├── input-section.tsx        # 三步卡片
+│   │   ├── input-section.tsx        # 两步卡片
 │   │   ├── bottom-action-bar.tsx    # 生成按钮
 │   │   └── theme-provider.tsx       # 主题提供者
 │   ├── lib/
@@ -122,7 +122,7 @@ type AccessoryType = 'bracelet'
 生成链路由后端 `AI_PROVIDER` 决定：
 - `mock`：返回占位图，适合本地开发；
 - `stable_diffusion`：调用本地 Stable Diffusion WebUI；
-- `bailian`：调用阿里百炼 `wan2.7-image-pro`。
+- `bailian`：调用阿里百炼 `qwen-image-2.0-pro`。
 
 上传接口返回 `url` 和 `thumbnail_url`：前端预览可使用 `thumbnail_url`，提交生成任务必须使用 `url` 原图。
 
