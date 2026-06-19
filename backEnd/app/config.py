@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Literal
+from typing import List, Literal, Optional
 from functools import lru_cache
 
 
@@ -7,7 +7,13 @@ class Settings(BaseSettings):
     app_name: str = "AI 试衣间 API"
     debug: bool = True
 
+    # MySQL 数据库配置
     database_url: str = "sqlite:///./data/db.sqlite"
+    pool_size: int = 5
+    max_overflow: int = 10
+    pool_timeout: int = 30
+    pool_recycle: int = 3600
+
     upload_dir: str = "./uploads"
     result_dir: str = "./results"
     static_dir: str = "./static"
@@ -28,6 +34,33 @@ class Settings(BaseSettings):
 
     # 兼容旧配置，ImageGeneration.call 已改用 Base64 输入，不再依赖公网图片地址
     public_base_url: str = ""
+
+    # JWT 配置
+    jwt_secret_key: str = "your-super-secret-key-change-in-production-please"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 1440
+    jwt_refresh_token_expire_days: int = 7
+
+    # 默认配额
+    default_quota: int = 10
+
+    # 密码策略
+    password_min_length: int = 8
+    password_require_uppercase: bool = True
+    password_require_lowercase: bool = True
+    password_require_digits: bool = True
+    password_require_special: bool = False
+    password_history_limit: int = 5
+
+    # 邮件配置（可选，用于发送验证邮件和重置密码邮件）
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    from_email: Optional[str] = None
+
+    # 邮箱验证开关
+    require_email_verification: bool = False
 
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
 
