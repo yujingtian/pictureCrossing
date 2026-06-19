@@ -18,7 +18,7 @@ function NavItem({ to, icon, label, active }: NavItemProps) {
         'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors',
         active
           ? 'bg-primary text-primary-foreground'
-          : 'text-gray-600 hover:bg-gray-100'
+          : 'text-gray-600 hover:bg-gray-100',
       )}
     >
       {icon}
@@ -32,9 +32,9 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const { logout } = useAuth()
 
-  const isDashboard = location.pathname === '/admin'
-  const isUsers = location.pathname.startsWith('/admin/users')
-  const isRecommendations = location.pathname.startsWith('/admin/recommendations')
+  const isDashboard = location.pathname === '/' || location.pathname === '/admin'
+  const isUsers = location.pathname === '/users' || location.pathname.startsWith('/admin/users')
+  const isRecommendations = location.pathname === '/recommendations' || location.pathname.startsWith('/admin/recommendations')
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -53,20 +53,20 @@ export function AdminLayout() {
 
         <nav className="flex-1 p-4 space-y-1">
           <NavItem
-            to="/admin"
-            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"/></svg>}
+            to="/"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z" /></svg>}
             label="仪表盘"
             active={isDashboard}
           />
           <NavItem
-            to="/admin/users"
-            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4.354 4.354 0 00-4.354 4.354c0 2.064 1.637 3.747 3.75 4.354a4.354 4.354 0 01-3.75 4.354M12 4.354a4.354 4.354 0 014.354 4.354c0 2.064-1.637 3.747-3.75 4.354a4.354 4.354 0 003.75 4.354m-12-12h8a2 2 0 012 2v2a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2a2 2 0 012-2z"/></svg>}
+            to="/users"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4.354 4.354 0 00-4.354 4.354c0 2.064 1.637 3.747 3.75 4.354a4.354 4.354 0 01-3.75 4.354M12 4.354a4.354 4.354 0 014.354 4.354c0 2.064-1.637 3.747-3.75 4.354a4.354 4.354 0 003.75 4.354m-12-12h8a2 2 0 012 2v2a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2a2 2 0 012-2z" /></svg>}
             label="用户管理"
             active={isUsers}
           />
           <NavItem
-            to="/admin/recommendations"
-            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6 -6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>}
+            to="/recommendations"
+            icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z" /></svg>}
             label="推荐图管理"
             active={isRecommendations}
           />
@@ -78,11 +78,11 @@ export function AdminLayout() {
             className="w-full justify-start text-gray-600 hover:text-red-600 hover:bg-red-50"
             onClick={() => {
               logout()
-              navigate('/')
+              navigate('/login')
             }}
           >
             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m10 4a4 4 0 01-4 4H7a4 4 0 01-4-4v-4a4 4 0 014-4h10a4 4 0 014 4v4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m10 4a4 4 0 01-4 4H7a4 4 0 01-4-4v-4a4 4 0 014-4h10a4 4 0 014 4v4z" />
             </svg>
             退出
           </Button>
@@ -100,9 +100,9 @@ export function AdminLayout() {
             </h2>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
+            <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-gray-700">
               返回前台
-            </Link>
+            </a>
           </div>
         </header>
 

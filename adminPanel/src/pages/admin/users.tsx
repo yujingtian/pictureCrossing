@@ -46,17 +46,17 @@ export function AdminUsers() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-      <h2 className="text-lg font-semibold text-gray-900">用户管理</h2>
-      <div className="flex items-center gap-4">
-        <Input
-          type="search"
-        placeholder="搜索用户名或邮箱..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-64"
-        />
+        <h2 className="text-lg font-semibold text-gray-900">用户管理</h2>
+        <div className="flex items-center gap-4">
+          <Input
+            type="search"
+            placeholder="搜索用户名或邮箱..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-64"
+          />
+        </div>
       </div>
-    </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <Table>
@@ -141,7 +141,7 @@ export function AdminUsers() {
                   </TableCell>
                 </TableRow>
               ))
-            }
+            )}
           </TableBody>
         </Table>
       </div>
