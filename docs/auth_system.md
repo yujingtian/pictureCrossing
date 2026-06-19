@@ -1,0 +1,132 @@
+# 用户认证与管理系统
+
+## 概述
+
+本次更新为 AI 试衣间应用增加了完整的用户认证体系和后台管理功能。
+
+## 主要功能
+
+### 用户认证
+- 用户注册与登录
+- JWT Token 认证（Access Token + Refresh Token）
+- 密码安全存储（bcrypt 哈希）
+- 密码历史记录（防止重复使用最近的密码）
+- 登录频率限制（防止暴力破解）
+- 邮箱验证（可选）
+- 忘记密码功能（可选）
+
+### 用户配额管理
+- 用户注册时分配默认配额
+- 生成图片时自动扣减配额
+- 配额不足时阻止生成
+- 管理员可调整用户配额
+
+### 后台管理
+- 仪表盘（统计数据概览）
+- 用户管理（用户列表、编辑、禁用）
+- 推荐图管理（推荐图列表、编辑、删除、排序）
+- 操作审计日志
+
+## 技术变更
+
+### 后端技术
+- 数据库：MySQL（原 SQLite 仍支持）
+- ORM：SQLAlchemy 2.0
+- 迁移工具：Alembic
+- 认证：JWT (python-jose)
+- 密码：passlib + bcrypt
+
+### 前端技术
+- 路由：React Router v6
+- 状态管理：React Context
+- UI：shadcn/ui
+
+## 新增文件
+
+### 后端
+- `app/api/auth.py` - 认证接口
+- `app/api/users.py` - 用户接口
+- `app/api/admin.py` - 管理后台接口
+- `app/core/auth.py` - JWT 认证核心
+- `app/core/security.py` - 密码安全、防暴力破解
+- `app/core/email.py` - 邮件服务（可选）
+- `alembic.ini` - Alembic 配置
+- `alembic/env.py` - Alembic 环境
+- `alembic/versions/001_initial_schema.py` - 初始迁移
+- `alembic/versions/002_add_auth_tables.py` - 认证表迁移
+
+### 前端
+- `src/types/auth.ts` - 认证类型定义
+- `src/utils/storage.ts` - 本地存储工具
+- `src/services/auth.ts` - 认证 API
+- `src/services/admin.ts` - 管理后台 API
+- `src/context/auth-context.tsx` - 认证上下文
+- `src/routes/index.tsx` - 路由配置
+- `src/routes/protected-route.tsx` - 受保护路由
+- `src/routes/admin-route.tsx` - 管理员路由
+- `src/pages/login.tsx` - 登录页
+- `src/pages/register.tsx` - 注册页
+- `src/pages/forgot-password.tsx` - 忘记密码页
+- `src/pages/admin/dashboard.tsx` - 管理后台仪表盘
+- `src/pages/admin/users.tsx` - 用户管理页
+- `src/pages/admin/recommendations.tsx` - 推荐图管理页
+- `src/components/user-menu.tsx` - 用户菜单
+- `src/components/quota-display.tsx` - 配额显示
+- `src/components/admin/layout.tsx` - 管理后台布局
+- `src/components/admin/stats-card.tsx` - 统计卡片组件
+
+## 数据库变更
+
+### 新增表
+- `users` - 用户表
+- `refresh_tokens` - Refresh Token 表
+- `password_history` - 密码历史表
+- `audit_logs` - 审计日志表
+- `recommendation_images` - 推荐图表
+
+### 变更表
+- `generation_tasks` - 增加 user_id 字段
+
+## 配置说明
+
+### 环境变量
+```env
+# 数据库
+DATABASE_URL=mysql+pymysql://user:pass@localhost/dbname
+
+# JWT
+JWT_SECRET_KEY=your-secret-key
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=1440
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# 默认配额
+DEFAULT_QUOTA=10
+
+# 邮箱配置（可选）
+REQUIRE_EMAIL_VERIFICATION=false
+SMTP_HOST=...
+```
+
+## 测试账号
+- 管理员：`admin` / `admin123`
+- 测试用户：`test` / `test123`
+
+## 使用指南
+
+### 初始化数据库
+```bash
+cd backend
+alembic upgrade head
+```
+
+### 启动服务
+```bash
+cd backend
+python main.py
+```
+
+### 前端使用
+1. 首次访问会跳转到登录页
+2. 新用户可注册账号
+3. 登录后可正常使用 AI 试衣功能
+4. 管理员可通过用户菜单访问后台管理
