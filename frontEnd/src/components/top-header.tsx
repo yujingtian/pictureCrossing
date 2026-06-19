@@ -1,3 +1,6 @@
+import { UserMenu } from './user-menu'
+import { QuotaDisplay } from './quota-display'
+
 export function TopHeader() {
   return (
     <header className="glass fixed top-0 left-0 right-0 z-50 border-b border-border/50">
@@ -10,8 +13,11 @@ export function TopHeader() {
           AI 试戴间
         </h1>
 
-        {/* 右侧留白保持平衡 */}
-        <div className="w-9" />
+        {/* 右侧：配额和用户菜单 */}
+        <div className="flex items-center gap-3">
+          <QuotaDisplay />
+          <UserMenu />
+        </div>
       </div>
     </header>
   )
