@@ -1,11 +1,14 @@
 from pathlib import Path
+import uuid
 
 from PIL import Image, ImageDraw
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import PresetAccessory, PresetModel, PresetScene
+from app.models import PresetAccessory, PresetModel, PresetScene, User
+from app.core.security import get_password_hash
+from app.core.security import save_password_to_history
 
 settings = get_settings()
 
@@ -142,6 +145,50 @@ def ensure_initial_data():
 
         for scene_data in DEFAULT_DATA["scenes"]:
             _upsert(db, PresetScene, scene_data)
+
+        # 创建默认管理员
+        admin = db.query(User).filter(User.username == "admin").first()
+        if not admin:
+            hashed_pwd = get_password_hash("admin123")
+            admin = User(
+                id=str(uuid.uuid4()),
+                username="admin",
+                email="admin@example.com",
+                hashed_password=hashed_pwd,
+                role="ADMIN",
+                quota_total=9999,
+                quota_used=0,
+                is_active=True,
+                email_verified=True,
+                require_password_change=True
+            )
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+            save_password_to_history(db, admin.id, hashed_pwd)
+            print("已创建默认管理员: admin/admin123")
+
+        # 创建测试用户
+        test_user = db.query(User).filter(User.username == "test").first()
+        if not test_user:
+            hashed_pwd = get_password_hash("test123")
+            test_user = User(
+                id=str(uuid.uuid4()),
+                username="test",
+                email="test@example.com",
+                hashed_password=hashed_pwd,
+                role="USER",
+                quota_total=20,
+                quota_used=0,
+                is_active=True,
+                email_verified=True,
+                require_password_change=False
+            )
+            db.add(test_user)
+            db.commit()
+            db.refresh(test_user)
+            save_password_to_history(db, test_user.id, hashed_pwd)
+            print("已创建测试用户: test/test123")
 
         db.commit()
         print("初始化数据已加载")

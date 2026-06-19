@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.database import get_db
-from app.models import PresetAccessory, PresetModel, PresetScene
-from app.schemas import AccessoryResponse, ModelResponse, SceneResponse, ApiResponse
+from app.models import PresetAccessory, PresetModel, PresetScene, RecommendationImage
+from app.schemas import AccessoryResponse, ModelResponse, SceneResponse, ApiResponse, RecommendationResponse
 
 router = APIRouter(prefix="/presets", tags=["预设资源"])
 
@@ -46,3 +46,16 @@ def get_scenes(
     scenes = query.order_by(PresetScene.sort_order).all()
     data = [SceneResponse.model_validate(s).model_dump() for s in scenes]
     return ApiResponse(success=True, data=data)
+
+
+@router.get("/recommendations", response_model=ApiResponse[list[RecommendationResponse]])
+def get_recommendations(
+    position: Optional[str] = Query("home", description="展示位置"),
+    db: Session = Depends(get_db)
+):
+    """获取前台展示的推荐图"""
+    query = db.query(RecommendationImage).filter(RecommendationImage.is_active)
+    if position:
+        query = query.filter(RecommendationImage.position == position)
+    recommendations = query.order_by(RecommendationImage.sort_order).all()
+    return ApiResponse(success=True, data=[RecommendationResponse.model_validate(r) for r in recommendations])
