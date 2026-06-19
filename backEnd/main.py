@@ -8,7 +8,7 @@ import os
 from app.config import get_settings
 from app.database import init_db, reset_stuck_tasks
 from app.core import init_data
-from app.api import presets, upload, generate
+from app.api import presets, upload, generate, auth, users, admin
 from app.services.rate_limiter import limiter
 
 settings = get_settings()
@@ -36,6 +36,9 @@ app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 app.include_router(presets.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
 app.include_router(generate.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+app.include_router(admin.router, prefix="/api/admin")
 
 
 @app.on_event("startup")
