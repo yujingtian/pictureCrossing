@@ -1,4 +1,5 @@
 import { useAuth } from '@/context/auth-context'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function UserMenu() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   if (!user) return null
 
@@ -49,12 +51,20 @@ export function UserMenu() {
               <div className="flex items-center justify-between">
                 <span>配额</span>
                 <span className="text-sm text-gray-500">
-                  {user.quota_used} / {user.quota_total}
+                  {user.quotaUsed} / {user.quotaTotal}
                 </span>
               </div>
             </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        {user.role === 'admin' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/admin')}>
+              管理后台
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={logout}
