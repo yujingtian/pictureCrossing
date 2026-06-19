@@ -40,8 +40,8 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_index(op.f('ix_users_password_reset_token'), 'users', ['password_reset_token'], unique=False)
+    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
 
     op.create_table('refresh_tokens',
     sa.Column('id', sa.String(length=36), nullable=False),
@@ -103,7 +103,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_recommendation_images_is_active'), 'recommendation_images', ['is_active'], unique=False)
     op.create_index(op.f('ix_recommendation_images_position'), 'recommendation_images', ['position'], unique=False)
 
-    # Add user_id column to generation_tasks
     op.add_column('generation_tasks', sa.Column('user_id', sa.String(length=36), nullable=True))
     op.create_index(op.f('ix_generation_tasks_user_id'), 'generation_tasks', ['user_id'], unique=False)
     op.create_foreign_key('fk_generation_tasks_user_id', 'generation_tasks', 'users', ['user_id'], ['id'])
@@ -132,8 +131,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_refresh_tokens_token'), table_name='refresh_tokens')
     op.drop_table('refresh_tokens')
 
-    op.drop_index(op.f('ix_users_password_reset_token'), table_name='users')
     op.drop_index(op.f('ix_users_username'), table_name='users')
+    op.drop_index(op.f('ix_users_password_reset_token'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###
