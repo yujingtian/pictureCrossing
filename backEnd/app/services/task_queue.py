@@ -44,12 +44,10 @@ class TaskQueue:
 
     def create_task(self, db: Session, accessory_type: str,
                     accessory: dict, model: dict, scene: dict = None,
-                    options: dict = None) -> str:
-        task_id = f"task_{uuid.uuid4().hex[:16]}"
+                    options: dict = None, user_id: str = None) -> str:
         options = options or {}
 
         task = GenerationTask(
-            id=task_id,
             status=TaskStatus.PENDING,
             accessory_type=accessory_type,
             accessory_source=accessory.get("source"),
@@ -60,10 +58,13 @@ class TaskQueue:
             model_url=model.get("url"),
             model_mask_url=model.get("mask_url"),
             scene_id=scene.get("id") if scene else None,
-            lighting=options.get("lighting", "natural")
+            lighting=options.get("lighting", "natural"),
+            user_id=user_id
         )
         db.add(task)
         db.commit()
+        db.refresh(task)
+        task_id = task.id
 
         with self.lock:
             self.tasks[task_id] = {
