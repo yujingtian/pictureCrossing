@@ -5,7 +5,7 @@ from typing import Optional
 import json
 
 from app.database import get_db
-from app.models import User, RecommendationImage, GenerationTask
+from app.models import User, RecommendationImage, GenerationTask, UserRole
 from app.schemas import (
     ApiResponse, AdminStatsResponse,
     UserListParams, PaginatedResponse, AdminUserResponse,
@@ -122,7 +122,7 @@ def create_user(
         username=req.username,
         email=req.email,
         hashed_password=hashed_pwd,
-        role=req.role,
+        role=UserRole(req.role),
         quota_total=req.quota_total,
         quota_used=0,
         is_active=req.is_active,
@@ -167,7 +167,7 @@ def update_user(
         user.email_verified = False
 
     if req.role is not None:
-        user.role = req.role
+        user.role = UserRole(req.role)
 
     if req.is_active is not None:
         user.is_active = req.is_active

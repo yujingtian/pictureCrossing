@@ -6,7 +6,7 @@ import json
 
 from app.database import get_db
 from app.config import get_settings
-from app.models import User
+from app.models import User, UserRole
 from app.schemas import (
     UserRegister, UserLogin, TokenResponse, RefreshTokenRequest,
     UserResponse, UserUpdateRequest, ChangePasswordRequest,
@@ -87,7 +87,7 @@ def register(request: Request, user_data: UserRegister, db: Session = Depends(ge
         username=user_data.username,
         email=user_data.email,
         hashed_password=hashed_password,
-        role="USER",
+        role=UserRole.USER,
         quota_total=settings.default_quota,
         quota_used=0,
         is_active=True,

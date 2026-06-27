@@ -6,7 +6,7 @@ from datetime import datetime
 from app.services.rate_limiter import get_rate_limiter, get_rate_limit_string
 from app.config import get_settings
 from app.database import get_db
-from app.models import User
+from app.models import User, UserRole
 from app.core.auth import verify_token
 
 settings = get_settings()
@@ -82,7 +82,7 @@ def get_current_admin_user(
     current_user: User = Depends(get_current_active_user)
 ):
     """获取当前管理员用户"""
-    if current_user.role != "ADMIN":
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要管理员权限"

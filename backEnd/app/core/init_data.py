@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import PresetAccessory, PresetModel, PresetScene, User
+from app.models import PresetAccessory, PresetModel, PresetScene, User, UserRole
 from app.core.security import get_password_hash
 from app.core.security import save_password_to_history
 
@@ -155,7 +155,7 @@ def ensure_initial_data():
                 username="admin",
                 email="admin@example.com",
                 hashed_password=hashed_pwd,
-                role="ADMIN",
+                role=UserRole.ADMIN,
                 quota_total=9999,
                 quota_used=0,
                 is_active=True,
@@ -177,7 +177,7 @@ def ensure_initial_data():
                 username="test",
                 email="test@example.com",
                 hashed_password=hashed_pwd,
-                role="USER",
+                role=UserRole.USER,
                 quota_total=20,
                 quota_used=0,
                 is_active=True,
