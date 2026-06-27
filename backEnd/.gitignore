@@ -31,6 +31,10 @@ results/
 static/
 data/*.sqlite
 data/*.sqlite3
+data/*.sqlite-shm
+data/*.sqlite-wal
+data/*.sqlite3-shm
+data/*.sqlite3-wal
 backups/
 
 *.log
