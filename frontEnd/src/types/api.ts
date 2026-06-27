@@ -86,3 +86,18 @@ export interface ApiResponse<T = unknown> {
   message?: string
   error?: string
 }
+
+export interface RecommendationImage {
+  id: string
+  title: string
+  description?: string
+  imageUrl: string
+  position: string
+  accessoryType?: string
+  sortOrder: number
+  isActive: boolean
+  linkType?: string
+  linkTarget?: string
+  createdAt: string
+  updatedAt: string
+}

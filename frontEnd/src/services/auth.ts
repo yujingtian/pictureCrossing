@@ -197,9 +197,3 @@ export async function getQuota(): Promise<ApiResponse<QuotaResponse>> {
   const response = await fetchWithAuth(`${API_BASE}/users/quota`)
   return handleResponse<ApiResponse<QuotaResponse>>(response)
 }
-
-export async function getRecommendations(position: string = 'home'): Promise<ApiResponse<any[]>> {
-  const params = new URLSearchParams({ position })
-  const response = await fetch(`${API_BASE}/presets/recommendations?${params}`)
-  return handleResponse<ApiResponse<any[]>>(response)
-}

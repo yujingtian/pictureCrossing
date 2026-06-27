@@ -1,6 +1,7 @@
 import { getAccessToken, removeAccessToken, clearAuth } from '@/utils/storage'
 
 const API_BASE = '/api/admin'
+const API_UPLOAD = '/api/upload'
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getAccessToken()
@@ -166,4 +167,31 @@ export async function moveRecommendationDown(id: string): Promise<any> {
   return request(`/recommendations/${id}/move-down`, {
     method: 'POST',
   })
+}
+
+// 图片上传
+export async function uploadImage(file: File, type: 'accessory' | 'model' | 'mask' = 'model'): Promise<any> {
+  const token = getAccessToken()
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${API_UPLOAD}?type=${type}`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  if (response.status === 401) {
+    clearAuth()
+    window.location.href = '/login'
+    throw new Error('未授权')
+  }
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || '上传失败')
+  }
+
+  return data
 }
