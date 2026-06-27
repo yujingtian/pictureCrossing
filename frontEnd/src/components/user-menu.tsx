@@ -57,14 +57,6 @@ export function UserMenu() {
             </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        {user.role === 'admin' && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/admin')}>
-              管理后台
-            </DropdownMenuItem>
-          </>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={logout}
