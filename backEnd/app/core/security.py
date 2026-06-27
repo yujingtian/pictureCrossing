@@ -1,13 +1,10 @@
-from passlib.context import CryptContext
+import bcrypt
 import time
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.models import PasswordHistory
 from app.config import get_settings
-
-# 密码哈希上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 内存存储登录尝试记录（生产环境建议用 Redis）
 login_attempts: Dict[str, List[float]] = {}
@@ -16,12 +13,13 @@ lockout_until: Dict[str, float] = {}
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def get_password_hash(password: str) -> str:
     """获取密码哈希"""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def check_login_attempt(username: str) -> Tuple[bool, str]:
