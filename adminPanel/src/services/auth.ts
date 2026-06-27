@@ -94,8 +94,8 @@ export async function login(credentials: LoginRequest): Promise<ApiResponse<Toke
   const data = await handleResponse<ApiResponse<TokenResponse>>(response)
 
   if (data.success && data.data) {
-    setAccessToken(data.data.access_token)
-    setRefreshToken(data.data.refresh_token)
+    setAccessToken(data.data.accessToken)
+    setRefreshToken(data.data.refreshToken)
   }
 
   return data
@@ -130,10 +130,10 @@ export async function refreshTokens(): Promise<string> {
     throw new Error('Failed to refresh token')
   }
 
-  setAccessToken(data.data.access_token)
-  setRefreshToken(data.data.refresh_token)
+  setAccessToken(data.data.accessToken)
+  setRefreshToken(data.data.refreshToken)
 
-  return data.data.access_token
+  return data.data.accessToken
 }
 
 export async function getCurrentUser(): Promise<ApiResponse<User>> {

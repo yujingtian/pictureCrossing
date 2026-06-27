@@ -201,11 +201,16 @@ class UserLogin(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(CamelCaseBase):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+    )
 
 
 class RefreshTokenRequest(BaseModel):

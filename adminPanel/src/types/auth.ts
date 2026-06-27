@@ -3,18 +3,18 @@ export interface User {
   username: string
   email: string
   role: 'user' | 'admin'
-  quota_total: number
-  quota_used: number
-  is_active: boolean
-  email_verified: boolean
-  created_at: string
+  quotaTotal: number
+  quotaUsed: number
+  isActive: boolean
+  emailVerified: boolean
+  createdAt: string
 }
 
 export interface TokenResponse {
-  access_token: string
-  refresh_token: string
-  token_type: string
-  expires_in: number
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: number
 }
 
 export interface ApiResponse<T = any> {
@@ -36,35 +36,35 @@ export interface RegisterRequest {
 }
 
 export interface QuotaResponse {
-  quota_total: number
-  quota_used: number
-  quota_remaining: number
+  quotaTotal: number
+  quotaUsed: number
+  quotaRemaining: number
 }
 
 export interface PaginationParams {
   page?: number
-  page_size?: number
+  pageSize?: number
 }
 
 export interface PaginatedResponse<T> {
   items: T[]
   total: number
   page: number
-  page_size: number
-  total_pages: number
+  pageSize: number
+  totalPages: number
 }
 
 export interface RecommendationImage {
   id: string
   title: string
   description?: string
-  image_url: string
+  imageUrl: string
   position: string
-  accessory_type?: string
-  sort_order: number
-  is_active: boolean
-  link_type?: string
-  link_target?: string
-  created_at: string
-  updated_at: string
+  accessoryType?: string
+  sortOrder: number
+  isActive: boolean
+  linkType?: string
+  linkTarget?: string
+  createdAt: string
+  updatedAt: string
 }

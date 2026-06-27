@@ -99,11 +99,6 @@ export function AdminLayout() {
               {isRecommendations && '推荐图管理'}
             </h2>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-gray-700">
-              返回前台
-            </a>
-          </div>
         </header>
 
         <div className="flex-1 overflow-auto p-6">

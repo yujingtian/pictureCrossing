@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # 邮箱验证开关
     require_email_verification: bool = False
 
-    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
 
     model_config = {
         "env_file": ".env",
