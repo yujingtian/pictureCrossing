@@ -47,7 +47,7 @@ export async function getUsers(params?: {
 }): Promise<any> {
   const searchParams = new URLSearchParams()
   if (params?.page) searchParams.set('page', params.page.toString())
-  if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString())
+  if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString())
   if (params?.search) searchParams.set('search', params.search)
 
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ''
@@ -102,7 +102,7 @@ export async function getRecommendations(params?: {
 }): Promise<any> {
   const searchParams = new URLSearchParams()
   if (params?.page) searchParams.set('page', params.page.toString())
-  if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString())
+  if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString())
   if (params?.position) searchParams.set('position', params.position)
   if (params?.search) searchParams.set('search', params.search)
 

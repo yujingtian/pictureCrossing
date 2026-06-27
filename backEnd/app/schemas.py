@@ -1,15 +1,29 @@
-from pydantic import BaseModel, Field, EmailStr, model_validator
+from pydantic import BaseModel, Field, EmailStr, model_validator, ConfigDict
 from datetime import datetime
 from typing import Literal, Optional, List, Any, Generic, TypeVar
 import re
 from app.config import get_settings
 
 
+def snake_to_camel(snake_str: str) -> str:
+    """将蛇形命名转换为驼峰命名"""
+    components = snake_str.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
+class CamelCaseBase(BaseModel):
+    """基础类，自动支持驼峰命名"""
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+    )
+
+
 # ==================== 通用 ====================
 
 T = TypeVar('T')
 
-class ApiResponse(BaseModel, Generic[T]):
+class ApiResponse(CamelCaseBase, Generic[T]):
     success: bool = True
     data: Optional[T] = None
     message: Optional[str] = None
@@ -25,7 +39,7 @@ class SortParams(BaseModel):
     sort_order: Literal["asc", "desc"] = "desc"
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse(CamelCaseBase, Generic[T]):
     items: List[T]
     total: int
     page: int
@@ -41,37 +55,46 @@ UploadType = Literal["accessory", "model", "mask"]
 GenerationModel = Literal["wan2.7-image-pro", "qwen-image-2.0-pro"]
 
 
-class AccessoryResponse(BaseModel):
+class AccessoryResponse(CamelCaseBase):
     id: str
     type: str
     name: str
     image_url: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
-class ModelResponse(BaseModel):
+class ModelResponse(CamelCaseBase):
     id: str
     category: str
     name: str
     image_url: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
-class SceneResponse(BaseModel):
+class SceneResponse(CamelCaseBase):
     id: str
     category: str
     name: str
     image_url: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
-class UploadResponse(BaseModel):
+class UploadResponse(CamelCaseBase):
     file_id: str
     url: str
     thumbnail_url: Optional[str] = None
@@ -189,7 +212,7 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
-class UserResponse(BaseModel):
+class UserResponse(CamelCaseBase):
     id: str
     username: str
     email: str
@@ -200,8 +223,11 @@ class UserResponse(BaseModel):
     email_verified: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
 class UserUpdateRequest(BaseModel):
@@ -248,7 +274,7 @@ class ResetPasswordRequest(BaseModel):
 
 # ==================== 用户接口 ====================
 
-class QuotaResponse(BaseModel):
+class QuotaResponse(CamelCaseBase):
     quota_total: int
     quota_used: int
     quota_remaining: int
@@ -261,20 +287,23 @@ class TaskHistoryParams(PaginationParams, SortParams):
     date_to: Optional[datetime] = None
 
 
-class TaskHistoryItem(BaseModel):
+class TaskHistoryItem(CamelCaseBase):
     id: str
     status: str
     accessory_type: str
     result_image_url: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
 # ==================== 管理接口 - 统计 ====================
 
-class AdminStatsResponse(BaseModel):
+class AdminStatsResponse(CamelCaseBase):
     total_users: int
     active_users_today: int
     total_generations: int
@@ -290,7 +319,7 @@ class UserListParams(PaginationParams, SortParams):
     is_active: Optional[bool] = None
 
 
-class AdminUserResponse(BaseModel):
+class AdminUserResponse(CamelCaseBase):
     id: str
     username: str
     email: str
@@ -302,8 +331,11 @@ class AdminUserResponse(BaseModel):
     last_login_at: Optional[datetime]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
 class AdminUserCreateRequest(BaseModel):
@@ -352,7 +384,7 @@ class RecommendationUpdateRequest(BaseModel):
     link_target: Optional[str] = None
 
 
-class RecommendationResponse(BaseModel):
+class RecommendationResponse(CamelCaseBase):
     id: str
     title: str
     description: Optional[str]
@@ -366,8 +398,11 @@ class RecommendationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        alias_generator=snake_to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
 
 class RecommendationListParams(PaginationParams, SortParams):

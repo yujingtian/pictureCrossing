@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { useImageUpload } from '@/hooks/use-image-upload'
-import { getPresetModels } from '@/services/api'
+import { getModels } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
 import type { AccessoryType, ModelInput, ModelResponse } from '@/types/api'
 
@@ -103,7 +103,7 @@ export function ModelPanel({
     const fetchPresets = async () => {
       setLoading(true)
       try {
-        const response = await getPresetModels(activeCategory)
+        const response = await getModels(activeCategory)
         if (response.success && response.data) {
           setPresets(response.data)
         }
@@ -281,27 +281,27 @@ export function ModelPanel({
                 {(activeCategory === 'all' ? allModels : filteredModels).map((model) => (
                   <ImagePreview
                     key={model.id}
-                    src={model.image_url}
+                    src={model.imageUrl}
                     alt={model.name}
                     confirmLabel="选择这张模特"
                     onConfirm={() => setSelected({
                       source: 'preset',
                       id: model.id,
-                      url: model.image_url,
+                      url: model.imageUrl,
                     })}
                     triggerClassName={cn(
                       "aspect-[4/3] rounded-xl border-2 transition-all",
-                      selectedUrl === model.image_url
+                      selectedUrl === model.imageUrl
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
                     )}
                   >
                     <img
-                      src={model.image_url}
+                      src={model.imageUrl}
                       alt={model.name}
                       className="w-full h-full object-cover"
                     />
-                    {selectedUrl === model.image_url && (
+                    {selectedUrl === model.imageUrl && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <Check className="w-3 h-3 text-primary-foreground" />

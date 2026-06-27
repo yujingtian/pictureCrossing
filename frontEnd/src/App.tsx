@@ -83,7 +83,7 @@ export default function App() {
         throw new Error(response.message || '创建生成任务失败')
       }
 
-      const newTaskId = response.data.task_id
+      const newTaskId = response.data.taskId
 
       // 开始轮询任务状态
       let pollCount = 0
@@ -98,7 +98,7 @@ export default function App() {
 
             if (taskStatus.status === 'completed') {
               // 任务完成
-              setGeneratedImage(taskStatus.result_url || null)
+              setGeneratedImage(taskStatus.resultUrl || null)
               setIsLoading(false)
               clearPolling()
               toast({ title: '生成成功！', description: '您的试戴效果图已生成' })

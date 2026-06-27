@@ -11,7 +11,7 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
-import { getPresetScenes } from '@/services/api'
+import { getScenes } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
 import type { SceneResponse } from '@/types/api'
 
@@ -49,7 +49,7 @@ export function ScenePanel({ open, onOpenChange, onConfirm, selectedScene }: Sce
     const fetchPresets = async () => {
       setLoading(true)
       try {
-        const response = await getPresetScenes(activeCategory)
+        const response = await getScenes(activeCategory)
         if (response.success && response.data) {
           setPresets(response.data)
         }
@@ -126,7 +126,7 @@ export function ScenePanel({ open, onOpenChange, onConfirm, selectedScene }: Sce
                   )}
                 >
                   <img
-                    src={scene.image_url}
+                    src={scene.imageUrl}
                     alt={scene.name}
                     className="w-full h-full object-cover"
                   />

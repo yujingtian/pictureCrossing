@@ -7,27 +7,27 @@ export interface AccessoryResponse {
   id: string
   type: string
   name: string
-  image_url: string
+  imageUrl: string
 }
 
 export interface ModelResponse {
   id: string
   category: string
   name: string
-  image_url: string
+  imageUrl: string
 }
 
 export interface SceneResponse {
   id: string
   category: string
   name: string
-  image_url: string
+  imageUrl: string
 }
 
 export interface UploadResponse {
-  file_id: string
+  fileId: string
   url: string
-  thumbnail_url?: string | null
+  thumbnailUrl?: string | null
 }
 
 export interface PresetAssetInput {
@@ -45,7 +45,7 @@ export interface UploadAssetInput {
 export type AccessoryInput = PresetAssetInput | UploadAssetInput
 
 export type ModelInput = (PresetAssetInput | UploadAssetInput) & {
-  mask_url?: string
+  maskUrl?: string
 }
 
 export interface SceneInput {
@@ -56,11 +56,11 @@ export interface GenerateOptions {
   lighting?: string
   prompt?: string
   strength?: number
-  guidance_scale?: number
+  guidanceScale?: number
 }
 
 export interface CreateGenerationRequest {
-  accessory_type: AccessoryType
+  accessoryType: AccessoryType
   accessory: AccessoryInput
   model: ModelInput
   scene?: SceneInput
@@ -68,15 +68,15 @@ export interface CreateGenerationRequest {
 }
 
 export interface CreateGenerationResponse {
-  task_id: string
+  taskId: string
   status: Extract<GenerationTaskStatus, 'pending'>
 }
 
 export interface TaskStatusResponse {
-  task_id: string
+  taskId: string
   status: GenerationTaskStatus
   progress?: number
-  result_url?: string | null
+  resultUrl?: string | null
   error?: string | null
 }
 

@@ -10,7 +10,7 @@ from app.schemas import (
 )
 from app.dependencies import get_current_active_user
 
-router = APIRouter(prefix="/api/users", tags=["用户"])
+router = APIRouter(prefix="/users", tags=["用户"])
 
 
 @router.get("/quota", response_model=ApiResponse[QuotaResponse])

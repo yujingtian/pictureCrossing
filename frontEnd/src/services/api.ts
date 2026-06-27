@@ -1,4 +1,4 @@
-import type {
+import {
   AccessoryResponse,
   ModelResponse,
   SceneResponse,
@@ -7,72 +7,13 @@ import type {
   CreateGenerationResponse,
   TaskStatusResponse,
   ApiResponse,
-  UploadType,
+  RecommendationImage
 } from '@/types/api'
-import { getAccessToken, getRefreshToken, setAccessToken, clearAuth } from '@/utils/storage'
+import { getAccessToken } from '@/utils/storage'
 
-let isRefreshing = false
-let refreshSubscribers: ((token: string) => void)[] = []
+const API_BASE = '/api'
 
-function subscribeTokenRefresh(callback: (token: string) => void) {
-  refreshSubscribers.push(callback)
-}
-
-function onTokenRefreshed(token: string) {
-  refreshSubscribers.forEach(callback => callback(token))
-  refreshSubscribers = []
-}
-
-function getErrorMessage(data: unknown, fallback: string) {
-  if (!data || typeof data !== 'object') return fallback
-
-  const record = data as Record<string, unknown>
-  const error = record.error
-  const message = record.message
-  const detail = record.detail
-
-  if (typeof error === 'string' && error) return error
-  if (typeof message === 'string' && message) return message
-  if (typeof detail === 'string' && detail) return detail
-
-  return fallback
-}
-
-async function parseResponseBody(response: Response): Promise<unknown> {
-  const contentType = response.headers.get('content-type') || ''
-
-  if (contentType.includes('application/json')) {
-    try {
-      return await response.json()
-    } catch {
-      return null
-    }
-  }
-
-  const text = await response.text()
-  return text || null
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await parseResponseBody(response)
-  const fallback = typeof data === 'string' && data ? data : `HTTP ${response.status}`
-  const errorMessage = getErrorMessage(data, fallback)
-
-  if (!response.ok) {
-    throw new Error(errorMessage)
-  }
-
-  if (data && typeof data === 'object') {
-    const record = data as Record<string, unknown>
-    if (record.success === false || (typeof record.error === 'string' && record.error)) {
-      throw new Error(errorMessage)
-    }
-  }
-
-  return data as T
-}
-
-async function fetchWithAuth(url: string, options: RequestInit = {}, requireAuth: boolean = false): Promise<Response> {
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken()
   const headers = new Headers(options.headers || {})
 
@@ -81,121 +22,127 @@ async function fetchWithAuth(url: string, options: RequestInit = {}, requireAuth
   }
 
   const response = await fetch(url, { ...options, headers })
-
-  if (response.status === 401 && requireAuth) {
-    const originalRequest = { url, options }
-
-    if (!isRefreshing) {
-      isRefreshing = true
-
-      try {
-        const newToken = await doRefreshToken()
-        onTokenRefreshed(newToken)
-
-        const retryHeaders = new Headers(options.headers || {})
-        retryHeaders.set('Authorization', `Bearer ${newToken}`)
-
-        return fetch(url, { ...options, headers: retryHeaders })
-      } catch (err) {
-        clearAuth()
-        window.location.href = '/login'
-        throw err
-      } finally {
-        isRefreshing = false
-      }
-    } else {
-      return new Promise((resolve) => {
-        subscribeTokenRefresh((newToken) => {
-          const retryHeaders = new Headers(options.headers || {})
-          retryHeaders.set('Authorization', `Bearer ${newToken}`)
-          resolve(fetch(url, { ...options, headers: retryHeaders }))
-        })
-      })
-    }
-  }
-
   return response
 }
 
-async function doRefreshToken(): Promise<string> {
-  const refreshToken = getRefreshToken()
+async function handleResponse<T>(response: Response): Promise<T> {
+  const data = await response.json()
 
-  if (!refreshToken) {
-    throw new Error('No refresh token')
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `HTTP ${response.status}`)
   }
 
-  const response = await fetch('/api/auth/refresh', {
+  return data
+}
+
+// 获取配饰列表
+export async function getAccessories(type?: string): Promise<ApiResponse<AccessoryResponse[]>> {
+  const params = new URLSearchParams()
+  if (type) params.set('type', type)
+  const query = params.toString() ? `?${params.toString()}` : ''
+
+  const response = await fetch(`${API_BASE}/presets/accessories${query}`)
+  return handleResponse<ApiResponse<AccessoryResponse[]>>(response)
+}
+
+// 获取模特列表
+export async function getModels(category?: string): Promise<ApiResponse<ModelResponse[]>> {
+  const params = new URLSearchParams()
+  if (category && category !== 'all') params.set('category', category)
+  const query = params.toString() ? `?${params.toString()}` : ''
+
+  const response = await fetch(`${API_BASE}/presets/models${query}`)
+  return handleResponse<ApiResponse<ModelResponse[]>>(response)
+}
+
+// 获取场景列表
+export async function getScenes(category?: string): Promise<ApiResponse<SceneResponse[]>> {
+  const params = new URLSearchParams()
+  if (category) params.set('category', category)
+  const query = params.toString() ? `?${params.toString()}` : ''
+
+  const response = await fetch(`${API_BASE}/presets/scenes${query}`)
+  return handleResponse<ApiResponse<SceneResponse[]>>(response)
+}
+
+// 获取推荐图列表
+export async function getRecommendations(position: string = 'home'): Promise<ApiResponse<RecommendationImage[]>> {
+  const params = new URLSearchParams({ position })
+  const response = await fetch(`${API_BASE}/presets/recommendations?${params}`)
+  return handleResponse<ApiResponse<RecommendationImage[]>>(response)
+}
+
+// 上传文件
+export async function uploadImage(file: File, type: string): Promise<ApiResponse<UploadResponse>> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type)
+
+  const response = await fetchWithAuth(`${API_BASE}/upload`, {
+    method: 'POST',
+    body: formData
+  })
+
+  return handleResponse<ApiResponse<UploadResponse>>(response)
+}
+
+// 创建生成任务
+export async function createGeneration(request: CreateGenerationRequest): Promise<ApiResponse<CreateGenerationResponse>> {
+  // 转换为后端期望的蛇形命名
+  const backendRequest = {
+    accessory_type: request.accessoryType,
+    accessory: request.accessory,
+    model: request.model.maskUrl ? { ...request.model, mask_url: request.model.maskUrl } : request.model,
+    scene: request.scene,
+    options: request.options ? {
+      lighting: request.options.lighting,
+      prompt: request.options.prompt,
+      negative_prompt: (request.options as any).negativePrompt,
+      strength: request.options.strength,
+      guidance_scale: request.options.guidanceScale
+    } : undefined
+  }
+
+  const response = await fetchWithAuth(`${API_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
+    body: JSON.stringify(backendRequest)
   })
 
   const data = await handleResponse<ApiResponse<any>>(response)
 
-  if (!data.success || !data.data) {
-    throw new Error('Failed to refresh token')
+  // 转换回驼峰命名
+  if (data.success && data.data) {
+    return {
+      ...data,
+      data: {
+        taskId: data.data.task_id,
+        status: data.data.status
+      }
+    }
   }
 
-  setAccessToken(data.data.access_token)
-
-  return data.data.access_token
+  return data as ApiResponse<CreateGenerationResponse>
 }
 
-export async function getPresetAccessories(type?: string): Promise<ApiResponse<AccessoryResponse[]>> {
-  const url = new URL('/api/presets/accessories', window.location.origin)
-  if (type) {
-    url.searchParams.set('type', type)
-  }
-  const response = await fetch(url.toString())
-  return handleResponse<ApiResponse<AccessoryResponse[]>>(response)
-}
-
-export async function getPresetModels(category?: string): Promise<ApiResponse<ModelResponse[]>> {
-  const url = new URL('/api/presets/models', window.location.origin)
-  if (category && category !== 'all') {
-    url.searchParams.set('category', category)
-  }
-  const response = await fetch(url.toString())
-  return handleResponse<ApiResponse<ModelResponse[]>>(response)
-}
-
-export async function getPresetScenes(category?: string): Promise<ApiResponse<SceneResponse[]>> {
-  const url = new URL('/api/presets/scenes', window.location.origin)
-  if (category) {
-    url.searchParams.set('category', category)
-  }
-  const response = await fetch(url.toString())
-  return handleResponse<ApiResponse<SceneResponse[]>>(response)
-}
-
-export async function uploadImage(file: File, type: UploadType): Promise<ApiResponse<UploadResponse>> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const url = new URL('/api/upload', window.location.origin)
-  url.searchParams.set('type', type)
-
-  const response = await fetchWithAuth(url.toString(), {
-    method: 'POST',
-    body: formData,
-  }, true)
-  return handleResponse<ApiResponse<UploadResponse>>(response)
-}
-
-export async function createGeneration(
-  request: CreateGenerationRequest
-): Promise<ApiResponse<CreateGenerationResponse>> {
-  const response = await fetchWithAuth('/api/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  }, true)
-  return handleResponse<ApiResponse<CreateGenerationResponse>>(response)
-}
-
+// 获取任务状态
 export async function getTaskStatus(taskId: string): Promise<ApiResponse<TaskStatusResponse>> {
-  const response = await fetchWithAuth(`/api/generate/${taskId}`, {}, true)
-  return handleResponse<ApiResponse<TaskStatusResponse>>(response)
+  const response = await fetchWithAuth(`${API_BASE}/generate/${taskId}`)
+  const data = await handleResponse<ApiResponse<any>>(response)
+
+  // 转换为驼峰命名
+  if (data.success && data.data) {
+    return {
+      ...data,
+      data: {
+        taskId: data.data.task_id,
+        status: data.data.status,
+        progress: data.data.progress,
+        resultUrl: data.data.result_url,
+        error: data.data.error
+      }
+    }
+  }
+
+  return data as ApiResponse<TaskStatusResponse>
 }

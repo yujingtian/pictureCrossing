@@ -28,7 +28,7 @@ export function useImageUpload({
 
       const selection: UploadAssetInput = {
         source: 'upload',
-        id: response.data.file_id,
+        id: response.data.fileId,
         url: response.data.url,
       }
       onUploaded(selection)

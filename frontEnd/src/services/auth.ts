@@ -5,7 +5,7 @@ import {
   TokenResponse,
   User,
   QuotaResponse
-} from '@/types/auth';
+} from '@/types/auth'
 import {
   getAccessToken,
   getRefreshToken,
@@ -13,75 +13,75 @@ import {
   setRefreshToken,
   setUser,
   clearAuth
-} from '@/utils/storage';
+} from '@/utils/storage'
 
-const API_BASE = '/api';
+const API_BASE = '/api'
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let isRefreshing = false
+let refreshSubscribers: ((token: string) => void)[] = []
 
 function subscribeTokenRefresh(callback: (token: string) => void) {
-  refreshSubscribers.push(callback);
+  refreshSubscribers.push(callback)
 }
 
 function onTokenRefreshed(token: string) {
-  refreshSubscribers.forEach(callback => callback(token));
-  refreshSubscribers = [];
+  refreshSubscribers.forEach(callback => callback(token))
+  refreshSubscribers = []
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = getAccessToken();
-  const headers = new Headers(options.headers || {});
+  const token = getAccessToken()
+  const headers = new Headers(options.headers || {})
 
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers })
 
   if (response.status === 401) {
-    const originalRequest = { url, options };
+    const originalRequest = { url, options }
 
     if (!isRefreshing) {
-      isRefreshing = true;
+      isRefreshing = true
 
       try {
-        const newToken = await refreshTokens();
-        onTokenRefreshed(newToken);
+        const newToken = await refreshTokens()
+        onTokenRefreshed(newToken)
 
-        const retryHeaders = new Headers(options.headers || {});
-        retryHeaders.set('Authorization', `Bearer ${newToken}`);
+        const retryHeaders = new Headers(options.headers || {})
+        retryHeaders.set('Authorization', `Bearer ${newToken}`)
 
-        return fetch(url, { ...options, headers: retryHeaders });
+        return fetch(url, { ...options, headers: retryHeaders })
       } catch (err) {
-        clearAuth();
-        window.location.href = '/login';
-        throw err;
+        clearAuth()
+        window.location.href = '/login'
+        throw err
       } finally {
-        isRefreshing = false;
+        isRefreshing = false
       }
     } else {
       return new Promise((resolve) => {
         subscribeTokenRefresh((newToken) => {
-          const retryHeaders = new Headers(options.headers || {});
-          retryHeaders.set('Authorization', `Bearer ${newToken}`);
-          resolve(fetch(url, { ...options, headers: retryHeaders }));
-        });
-      });
+          const retryHeaders = new Headers(options.headers || {})
+          retryHeaders.set('Authorization', `Bearer ${newToken}`)
+          resolve(fetch(url, { ...options, headers: retryHeaders }))
+        })
+      })
     }
   }
 
-  return response;
+  return response
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await response.json();
+  const data = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || `HTTP ${response.status}`);
+    throw new Error(data.message || data.error || `HTTP ${response.status}`)
   }
 
-  return data;
+  return data
 }
 
 export async function login(credentials: LoginRequest): Promise<ApiResponse<TokenResponse>> {
@@ -89,16 +89,16 @@ export async function login(credentials: LoginRequest): Promise<ApiResponse<Toke
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials)
-  });
+  })
 
-  const data = await handleResponse<ApiResponse<TokenResponse>>(response);
+  const data = await handleResponse<ApiResponse<TokenResponse>>(response)
 
   if (data.success && data.data) {
-    setAccessToken(data.data.access_token);
-    setRefreshToken(data.data.refresh_token);
+    setAccessToken(data.data.accessToken)
+    setRefreshToken(data.data.refreshToken)
   }
 
-  return data;
+  return data
 }
 
 export async function register(data: RegisterRequest): Promise<ApiResponse<TokenResponse>> {
@@ -106,61 +106,61 @@ export async function register(data: RegisterRequest): Promise<ApiResponse<Token
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  });
+  })
 
-  return handleResponse<ApiResponse<TokenResponse>>(response);
+  return handleResponse<ApiResponse<TokenResponse>>(response)
 }
 
 export async function refreshTokens(): Promise<string> {
-  const refreshToken = getRefreshToken();
+  const refreshToken = getRefreshToken()
 
   if (!refreshToken) {
-    throw new Error('No refresh token');
+    throw new Error('No refresh token')
   }
 
   const response = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken })
-  });
+  })
 
-  const data = await handleResponse<ApiResponse<TokenResponse>>(response);
+  const data = await handleResponse<ApiResponse<TokenResponse>>(response)
 
   if (!data.success || !data.data) {
-    throw new Error('Failed to refresh token');
+    throw new Error('Failed to refresh token')
   }
 
-  setAccessToken(data.data.access_token);
-  setRefreshToken(data.data.refresh_token);
+  setAccessToken(data.data.accessToken)
+  setRefreshToken(data.data.refreshToken)
 
-  return data.data.access_token;
+  return data.data.accessToken
 }
 
 export async function getCurrentUser(): Promise<ApiResponse<User>> {
-  const response = await fetchWithAuth(`${API_BASE}/auth/me`);
-  const data = await handleResponse<ApiResponse<User>>(response);
+  const response = await fetchWithAuth(`${API_BASE}/auth/me`)
+  const data = await handleResponse<ApiResponse<User>>(response)
 
   if (data.success && data.data) {
-    setUser(data.data);
+    setUser(data.data)
   }
 
-  return data;
+  return data
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken();
+  const refreshToken = getRefreshToken()
   if (refreshToken) {
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: refreshToken })
-      });
+      })
     } catch {
       // Ignore errors during logout
     }
   }
-  clearAuth();
+  clearAuth()
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse> {
@@ -168,9 +168,9 @@ export async function changePassword(currentPassword: string, newPassword: strin
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
-  });
+  })
 
-  return handleResponse<ApiResponse>(response);
+  return handleResponse<ApiResponse>(response)
 }
 
 export async function forgotPassword(email: string): Promise<ApiResponse> {
@@ -178,9 +178,9 @@ export async function forgotPassword(email: string): Promise<ApiResponse> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
-  });
+  })
 
-  return handleResponse<ApiResponse>(response);
+  return handleResponse<ApiResponse>(response)
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<ApiResponse> {
@@ -188,18 +188,18 @@ export async function resetPassword(token: string, newPassword: string): Promise
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword })
-  });
+  })
 
-  return handleResponse<ApiResponse>(response);
+  return handleResponse<ApiResponse>(response)
 }
 
 export async function getQuota(): Promise<ApiResponse<QuotaResponse>> {
-  const response = await fetchWithAuth(`${API_BASE}/users/quota`);
-  return handleResponse<ApiResponse<QuotaResponse>>(response);
+  const response = await fetchWithAuth(`${API_BASE}/users/quota`)
+  return handleResponse<ApiResponse<QuotaResponse>>(response)
 }
 
 export async function getRecommendations(position: string = 'home'): Promise<ApiResponse<any[]>> {
-  const params = new URLSearchParams({ position });
-  const response = await fetch(`${API_BASE}/presets/recommendations?${params}`);
-  return handleResponse<ApiResponse<any[]>>(response);
+  const params = new URLSearchParams({ position })
+  const response = await fetch(`${API_BASE}/presets/recommendations?${params}`)
+  return handleResponse<ApiResponse<any[]>>(response)
 }

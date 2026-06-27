@@ -10,9 +10,9 @@ export function QuotaDisplay() {
     if (user) {
       // 优先使用用户对象中的配额信息
       setQuota({
-        total: user.quota_total,
-        used: user.quota_used,
-        remaining: user.quota_total - user.quota_used
+        total: user.quotaTotal,
+        used: user.quotaUsed,
+        remaining: user.quotaTotal - user.quotaUsed
       })
     }
 
@@ -22,9 +22,9 @@ export function QuotaDisplay() {
         const response = await getQuota()
         if (response.success && response.data) {
           setQuota({
-            total: response.data.quota_total,
-            used: response.data.quota_used,
-            remaining: response.data.quota_remaining
+            total: response.data.quotaTotal,
+            used: response.data.quotaUsed,
+            remaining: response.data.quotaRemaining
           })
         }
       } catch (err) {

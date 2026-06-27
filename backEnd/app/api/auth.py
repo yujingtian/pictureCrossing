@@ -27,7 +27,7 @@ from app.core.auth import (
 from app.core.email import send_verification_email, send_password_reset_email, is_email_configured
 from app.dependencies import get_current_active_user
 
-router = APIRouter(prefix="/api/auth", tags=["认证"])
+router = APIRouter(prefix="/auth", tags=["认证"])
 settings = get_settings()
 
 
