@@ -30,8 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Upload, X, ArrowUp, ArrowDown, Image as ImageIcon, Loader2 } from 'lucide-react'
-import { getRecommendations, createRecommendation, updateRecommendation, deleteRecommendation, moveRecommendationUp, moveRecommendationDown, uploadImage } from '@/services/admin'
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { getRecommendations, createRecommendation, updateRecommendation, deleteRecommendation, uploadImage } from '@/services/admin'
 import { toast } from 'sonner'
 
 interface Recommendation {
@@ -71,7 +71,6 @@ export function AdminRecommendations() {
   const [editDialog, setEditDialog] = useState<EditDialogState>({ open: false, recommendation: null })
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({ open: false, recommendation: null })
   const [isSaving, setIsSaving] = useState(false)
-  const [isMoving, setIsMoving] = useState<string | null>(null)
 
   const pageSize = 20
 
@@ -160,39 +159,13 @@ export function AdminRecommendations() {
     }
   }
 
-  async function handleMoveUp(id: string) {
-    setIsMoving(id)
-    try {
-      await moveRecommendationUp(id)
-      toast.success('移动成功')
-      fetchRecommendations()
-    } catch (err: any) {
-      toast.error('移动失败', { description: err.message || '请稍后重试' })
-    } finally {
-      setIsMoving(null)
-    }
-  }
-
-  async function handleMoveDown(id: string) {
-    setIsMoving(id)
-    try {
-      await moveRecommendationDown(id)
-      toast.success('移动成功')
-      fetchRecommendations()
-    } catch (err: any) {
-      toast.error('移动失败', { description: err.message || '请稍后重试' })
-    } finally {
-      setIsMoving(null)
-    }
-  }
-
-  function getTargetDisplay(rec: Recommendation) {
+  function getTargetTypeDisplay(rec: Recommendation) {
     if (rec.targetType === 'accessory') {
-      return `配饰: ${rec.targetValue}`
+      return '配饰推荐'
     } else if (rec.targetType === 'model') {
-      return `模特: ${rec.targetValue}`
+      return '模特推荐'
     }
-    return `${rec.targetType}/${rec.targetValue}`
+    return rec.targetType
   }
 
   return (
@@ -231,7 +204,7 @@ export function AdminRecommendations() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {recommendations.map((rec) => (
               <Card key={rec.id} className="overflow-hidden">
-                <div className="aspect-[16/9] bg-gray-100 relative">
+                <div className="h-48 bg-gray-100 relative">
                   {rec.imageUrl ? (
                     <img
                       src={rec.imageUrl}
@@ -258,28 +231,12 @@ export function AdminRecommendations() {
                 <CardContent className="pb-2">
                   <div className="text-xs text-gray-500 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span>目标：{getTargetDisplay(rec)}</span>
+                      <span>类型：{getTargetTypeDisplay(rec)}</span>
                       <span>排序：{rec.sortOrder}</span>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="pt-2 border-t flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleMoveUp(rec.id)}
-                    disabled={isMoving === rec.id}
-                  >
-                    {isMoving === rec.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleMoveDown(rec.id)}
-                    disabled={isMoving === rec.id}
-                  >
-                    {isMoving === rec.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDown className="w-4 h-4" />}
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -464,10 +421,6 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
       toast.error('请上传或输入图片地址')
       return
     }
-    if (!targetValue.trim()) {
-      toast.error('请输入目标值')
-      return
-    }
 
     const data: any = {
       title: title.trim(),
@@ -485,7 +438,7 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
     await onSave(data)
   }
 
-  const isValid = title.trim() && imageUrl.trim() && targetValue.trim() && !isNaN(parseInt(sortOrder, 10)) && parseInt(sortOrder, 10) >= 0
+  const isValid = title.trim() && imageUrl.trim() && !isNaN(parseInt(sortOrder, 10)) && parseInt(sortOrder, 10) >= 0
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -503,7 +456,7 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
             <Label>推荐图片</Label>
             <div className="flex flex-col gap-3">
               {imageUrl && (
-                <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative h-48 bg-gray-100 rounded-lg overflow-hidden">
                   <img src={imageUrl} alt="预览" className="w-full h-full object-cover" />
                   <button
                     type="button"
@@ -571,29 +524,17 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="targetType">目标类型</Label>
-              <Select value={targetType} onValueChange={setTargetType}>
-                <SelectTrigger id="targetType">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="accessory">配饰推荐</SelectItem>
-                  <SelectItem value="model">模特推荐</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="targetValue">目标值</Label>
-              <Input
-                id="targetValue"
-                value={targetValue}
-                onChange={(e) => setTargetValue(e.target.value)}
-                placeholder={targetType === 'accessory' ? '如: bracelet' : '如: wrist'}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="targetType">目标类型</Label>
+            <Select value={targetType} onValueChange={setTargetType}>
+              <SelectTrigger id="targetType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="accessory">配饰推荐</SelectItem>
+                <SelectItem value="model">模特推荐</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
