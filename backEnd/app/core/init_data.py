@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import PresetAccessory, PresetModel, PresetScene, User, UserRole
+from app.models import PresetAccessory, PresetModel, PresetScene, User, UserRole, RecommendationImage
 from app.core.security import get_password_hash
 from app.core.security import save_password_to_history
 
@@ -62,6 +62,44 @@ DEFAULT_DATA = {
             "image_url": "/static/presets/scene_nature.png",
             "prompt_template": "自然户外背景，阳光明媚",
             "sort_order": 2
+        }
+    ],
+    "recommendations": [
+        {
+            "id": "rec_accessory_001",
+            "title": "珍珠手链",
+            "description": "优雅珍珠手链推荐",
+            "image_url": "/static/presets/bracelet_001.png",
+            "type": "accessory",
+            "sort_order": 1,
+            "is_active": True
+        },
+        {
+            "id": "rec_accessory_002",
+            "title": "金色手链",
+            "description": "时尚金色手链推荐",
+            "image_url": "/static/presets/bracelet_002.png",
+            "type": "accessory",
+            "sort_order": 2,
+            "is_active": True
+        },
+        {
+            "id": "rec_model_001",
+            "title": "优雅手腕",
+            "description": "优雅模特手腕展示",
+            "image_url": "/static/presets/wrist_001.png",
+            "type": "model",
+            "sort_order": 1,
+            "is_active": True
+        },
+        {
+            "id": "rec_model_002",
+            "title": "时尚手腕",
+            "description": "时尚模特手腕展示",
+            "image_url": "/static/presets/wrist_002.png",
+            "type": "model",
+            "sort_order": 2,
+            "is_active": True
         }
     ]
 }
@@ -145,6 +183,9 @@ def ensure_initial_data():
 
         for scene_data in DEFAULT_DATA["scenes"]:
             _upsert(db, PresetScene, scene_data)
+
+        for rec_data in DEFAULT_DATA["recommendations"]:
+            _upsert(db, RecommendationImage, rec_data)
 
         # 创建默认管理员
         admin = db.query(User).filter(User.username == "admin").first()

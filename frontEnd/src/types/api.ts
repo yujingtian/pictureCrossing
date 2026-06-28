@@ -92,12 +92,9 @@ export interface RecommendationImage {
   title: string
   description?: string
   imageUrl: string
-  position: string
-  accessoryType?: string
+  type: 'accessory' | 'model'
   sortOrder: number
   isActive: boolean
-  linkType?: string
-  linkTarget?: string
   createdAt: string
   updatedAt: string
 }

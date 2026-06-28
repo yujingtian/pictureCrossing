@@ -1,13 +1,10 @@
 import {
-  AccessoryResponse,
-  ModelResponse,
-  SceneResponse,
+  RecommendationImage,
   UploadResponse,
   CreateGenerationRequest,
   CreateGenerationResponse,
   TaskStatusResponse,
-  ApiResponse,
-  RecommendationImage
+  ApiResponse
 } from '@/types/api'
 import { getAccessToken } from '@/utils/storage'
 
@@ -35,40 +32,24 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return data
 }
 
-// 获取配饰列表
-export async function getAccessories(type?: string): Promise<ApiResponse<AccessoryResponse[]>> {
-  const params = new URLSearchParams()
-  if (type) params.set('type', type)
-  const query = params.toString() ? `?${params.toString()}` : ''
-
-  const response = await fetch(`${API_BASE}/presets/accessories${query}`)
-  return handleResponse<ApiResponse<AccessoryResponse[]>>(response)
+// 获取配饰推荐列表
+export async function getAccessories(): Promise<ApiResponse<RecommendationImage[]>> {
+  const response = await fetch(`${API_BASE}/presets/accessories`)
+  return handleResponse<ApiResponse<RecommendationImage[]>>(response)
 }
 
-// 获取模特列表
-export async function getModels(category?: string): Promise<ApiResponse<ModelResponse[]>> {
-  const params = new URLSearchParams()
-  if (category && category !== 'all') params.set('category', category)
-  const query = params.toString() ? `?${params.toString()}` : ''
-
-  const response = await fetch(`${API_BASE}/presets/models${query}`)
-  return handleResponse<ApiResponse<ModelResponse[]>>(response)
-}
-
-// 获取场景列表
-export async function getScenes(category?: string): Promise<ApiResponse<SceneResponse[]>> {
-  const params = new URLSearchParams()
-  if (category) params.set('category', category)
-  const query = params.toString() ? `?${params.toString()}` : ''
-
-  const response = await fetch(`${API_BASE}/presets/scenes${query}`)
-  return handleResponse<ApiResponse<SceneResponse[]>>(response)
+// 获取模特推荐列表
+export async function getModels(): Promise<ApiResponse<RecommendationImage[]>> {
+  const response = await fetch(`${API_BASE}/presets/models`)
+  return handleResponse<ApiResponse<RecommendationImage[]>>(response)
 }
 
 // 获取推荐图列表
-export async function getRecommendations(position: string = 'home'): Promise<ApiResponse<RecommendationImage[]>> {
-  const params = new URLSearchParams({ position })
-  const response = await fetch(`${API_BASE}/presets/recommendations?${params}`)
+export async function getRecommendations(type?: string): Promise<ApiResponse<RecommendationImage[]>> {
+  const params = new URLSearchParams()
+  if (type) params.set('type', type)
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const response = await fetch(`${API_BASE}/presets/recommendations${query}`)
   return handleResponse<ApiResponse<RecommendationImage[]>>(response)
 }
 

@@ -250,8 +250,8 @@ def get_recommendations(
     """获取推荐图列表"""
     query = db.query(RecommendationImage).filter(RecommendationImage.deleted_at.is_(None))
 
-    if params.position:
-        query = query.filter(RecommendationImage.position == params.position)
+    if params.type:
+        query = query.filter(RecommendationImage.type == params.type)
 
     if params.is_active is not None:
         query = query.filter(RecommendationImage.is_active == params.is_active)
@@ -302,12 +302,9 @@ def create_recommendation(
         title=req.title,
         description=req.description,
         image_url=req.image_url,
-        position=req.position,
-        accessory_type=req.accessory_type,
+        type=req.type,
         sort_order=req.sort_order,
-        is_active=req.is_active,
-        link_type=req.link_type,
-        link_target=req.link_target
+        is_active=req.is_active
     )
     db.add(rec)
     db.commit()
@@ -377,7 +374,7 @@ def move_recommendation_up(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="推荐图不存在")
 
     prev_rec = db.query(RecommendationImage).filter(
-        RecommendationImage.position == rec.position,
+        RecommendationImage.type == rec.type,
         RecommendationImage.sort_order < rec.sort_order,
         RecommendationImage.deleted_at.is_(None)
     ).order_by(RecommendationImage.sort_order.desc()).first()
@@ -404,7 +401,7 @@ def move_recommendation_down(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="推荐图不存在")
 
     next_rec = db.query(RecommendationImage).filter(
-        RecommendationImage.position == rec.position,
+        RecommendationImage.type == rec.type,
         RecommendationImage.sort_order > rec.sort_order,
         RecommendationImage.deleted_at.is_(None)
     ).order_by(RecommendationImage.sort_order.asc()).first()

@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { useImageUpload } from '@/hooks/use-image-upload'
 import { getAccessories } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
-import type { AccessoryInput, AccessoryResponse, AccessoryType } from '@/types/api'
+import type { AccessoryInput, AccessoryType, RecommendationImage } from '@/types/api'
 
 // 配饰类型定义
 export type { AccessoryType }
@@ -55,7 +55,7 @@ export function AccessoryPanel({
   const [selected, setSelected] = useState<AccessoryInput | null>(
     selectedSelection ?? (selectedImage ? { source: 'upload', url: selectedImage } : null)
   )
-  const [presets, setPresets] = useState<AccessoryResponse[]>([])
+  const [presets, setPresets] = useState<RecommendationImage[]>([])
   const [loading, setLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -73,11 +73,6 @@ export function AccessoryPanel({
     onOpenChange(false)
   }
 
-  const handleTypeChange = (type: AccessoryType) => {
-    setCurrentType(type)
-    setSelected(null) // 切换类型时清空选择
-  }
-
   useEffect(() => {
     setSelected(selectedSelection ?? (selectedImage ? { source: 'upload', url: selectedImage } : null))
   }, [selectedImage, selectedSelection])
@@ -91,20 +86,20 @@ export function AccessoryPanel({
     cameraInputRef.current?.click()
   }
 
-  // 从后端获取预设数据
+  // 从后端获取推荐图数据
   useEffect(() => {
     if (!open) return
     const fetchPresets = async () => {
       setLoading(true)
       try {
-        const response = await getAccessories(currentType)
+        const response = await getAccessories()
         if (response.success && response.data) {
           setPresets(response.data)
         }
       } catch (error) {
-        console.error('获取配饰预设失败', error)
+        console.error('获取配饰推荐失败', error)
         toast({
-          title: '获取配饰预设失败',
+          title: '获取配饰推荐失败',
           description: error instanceof Error ? error.message : '请稍后重试',
           variant: 'destructive',
         })
@@ -113,7 +108,7 @@ export function AccessoryPanel({
       }
     }
     fetchPresets()
-  }, [open, currentType, toast])
+  }, [open, toast])
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -124,39 +119,11 @@ export function AccessoryPanel({
             选择配饰
           </DrawerTitle>
           <DrawerDescription className="text-[13px]">
-            选择配饰类型和款式，或上传自己的图片
+            选择推荐配饰或上传自己的图片
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-4 overflow-y-auto">
-          {/* 配饰类型选择 */}
-          <div className="mb-4">
-            <h4 className="text-[12px] font-medium text-muted-foreground mb-2">配饰类型</h4>
-            <div className="flex gap-2">
-              {accessoryTypes.map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => handleTypeChange(type.id)}
-                  className={cn(
-                    "flex-1 py-2.5 px-2 rounded-xl border-2 transition-all",
-                    "flex flex-col items-center gap-1",
-                    currentType === type.id
-                      ? "border-primary bg-primary/5 shadow-soft"
-                      : "border-border/60 bg-card hover:border-primary/30"
-                  )}
-                >
-                  <span className="text-lg">{type.icon}</span>
-                  <span className={cn(
-                    "text-[11px] font-medium",
-                    currentType === type.id ? "text-primary" : "text-foreground"
-                  )}>
-                    {type.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* 上传区域 */}
           <div className="mb-4">
             <input
@@ -236,22 +203,18 @@ export function AccessoryPanel({
             </div>
           )}
 
-          {/* 预设款式 */}
-          <div>
-            <h4 className="text-[12px] font-medium text-muted-foreground mb-2">
-              热门{accessoryTypes.find(t => t.id === currentType)?.name}款式
-            </h4>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : (
+          {/* 推荐配饰 */}
+          {(!loading && presets.length > 0) && (
+            <div>
+              <h4 className="text-[12px] font-medium text-muted-foreground mb-2">
+                推荐配饰
+              </h4>
               <div className="grid grid-cols-3 gap-2">
                 {presets.map((item) => (
                   <ImagePreview
                     key={item.id}
                     src={item.imageUrl}
-                    alt={item.name}
+                    alt={item.title}
                     confirmLabel="选择这张配饰"
                     onConfirm={() => setSelected({
                       source: 'preset',
@@ -260,17 +223,17 @@ export function AccessoryPanel({
                     })}
                     triggerClassName={cn(
                       "aspect-square rounded-xl border-2 transition-all",
-                      selectedUrl === item.imageUrl
+                      selected?.id === item.id || selectedUrl === item.imageUrl
                         ? "border-primary shadow-soft-lg"
                         : "border-transparent"
                     )}
                   >
                     <img
                       src={item.imageUrl}
-                      alt={item.name}
+                      alt={item.title}
                       className="w-full h-full object-cover"
                     />
-                    {selectedUrl === item.imageUrl && (
+                    {(selected?.id === item.id || selectedUrl === item.imageUrl) && (
                       <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                           <Check className="w-3 h-3 text-primary-foreground" />
@@ -278,13 +241,24 @@ export function AccessoryPanel({
                       </div>
                     )}
                     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1">
-                      <span className="text-[9px] text-white font-medium">{item.name}</span>
+                      <span className="text-[9px] text-white font-medium truncate block">{item.title}</span>
                     </div>
                   </ImagePreview>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          {/* 加载状态 */}
+          {loading && (
+            <div>
+              <h4 className="text-[12px] font-medium text-muted-foreground mb-2">
+                推荐配饰
+              </h4>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            </div>
+          )}
         </div>
 
         <DrawerFooter className="border-t border-border/50 pt-3">

@@ -119,12 +119,9 @@ class RecommendationImage(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=False)
-    position = Column(String(50), default="home", nullable=False, index=True)
-    accessory_type = Column(String(50), nullable=True)
+    type = Column(String(50), nullable=False, index=True)  # "accessory" 或 "model"
     sort_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    link_type = Column(String(20), nullable=True)
-    link_target = Column(String(100), nullable=True)
     deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
