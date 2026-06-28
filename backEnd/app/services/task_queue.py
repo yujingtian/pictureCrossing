@@ -4,7 +4,7 @@ import threading
 import time
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
-from app.models import GenerationTask, TaskStatus, PresetAccessory, PresetScene, PresetModel
+from app.models import GenerationTask, TaskStatus, RecommendationImage, PresetScene
 from app.services.ai_service import get_ai_service
 from app.services.storage import get_storage_service
 from app.config import get_settings
@@ -126,9 +126,9 @@ class TaskQueue:
         accessory_url = None
 
         if task.accessory_source == "preset" and task.accessory_id:
-            accessory = db.query(PresetAccessory).filter_by(id=task.accessory_id).first()
+            accessory = db.query(RecommendationImage).filter_by(id=task.accessory_id).first()
             if accessory:
-                accessory_name = accessory.name
+                accessory_name = accessory.title
                 accessory_url = accessory.image_url
         elif task.accessory_url:
             accessory_url = task.accessory_url
@@ -146,7 +146,7 @@ class TaskQueue:
     def _resolve_model_url(self, db: Session, task: GenerationTask) -> Optional[str]:
         model_url = task.model_url
         if task.model_source == "preset" and task.model_id:
-            model = db.query(PresetModel).filter_by(id=task.model_id).first()
+            model = db.query(RecommendationImage).filter_by(id=task.model_id).first()
             if model:
                 model_url = model.image_url
         return model_url

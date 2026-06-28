@@ -23,8 +23,8 @@ def migrate_database():
         cursor.execute("PRAGMA table_info(recommendation_images)")
         columns = {row[1]: row for row in cursor.fetchall()}
 
-        # 检查是否已经有type字段
-        if "type" in columns and "position" not in columns:
+        # 检查是否已经是最新结构（有 target_type 和 target_value 字段）
+        if "target_type" in columns and "target_value" in columns:
             print("数据库已经是最新结构，无需迁移")
             return
 
@@ -49,7 +49,8 @@ def migrate_database():
                 title VARCHAR(200) NOT NULL,
                 description TEXT,
                 image_url VARCHAR(500) NOT NULL,
-                type VARCHAR(50) NOT NULL DEFAULT 'accessory',
+                target_type VARCHAR(50) NOT NULL DEFAULT 'accessory',
+                target_value VARCHAR(50) NOT NULL DEFAULT 'bracelet',
                 sort_order INTEGER DEFAULT 0 NOT NULL,
                 is_active BOOLEAN DEFAULT 1 NOT NULL,
                 deleted_at DATETIME,
@@ -73,21 +74,28 @@ def migrate_database():
             created_at_val = row[col_indices['created_at']] if 'created_at' in col_indices else None
             updated_at_val = row[col_indices['updated_at']] if 'updated_at' in col_indices else None
 
-            # 根据position确定type
-            type_val = 'accessory'
-            if 'position' in col_indices:
-                pos_val = row[col_indices['position']]
-                if pos_val in ['model', 'wrist']:
-                    type_val = 'model'
+            # 根据旧字段确定新的 target_type 和 target_value
+            target_type_val = 'accessory'
+            target_value_val = 'bracelet'
+
+            if 'type' in col_indices:
+                old_type_val = row[col_indices['type']]
+                if old_type_val == 'model':
+                    target_type_val = 'model'
+                    target_value_val = 'wrist'
+                else:
+                    target_type_val = 'accessory'
+                    target_value_val = 'bracelet'
 
             cursor.execute("""
                 INSERT INTO recommendation_images
-                (id, title, description, image_url, type, sort_order, is_active, deleted_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (id_val, title_val, desc_val, image_url_val, type_val, sort_order_val, is_active_val, deleted_at_val, created_at_val, updated_at_val))
+                (id, title, description, image_url, target_type, target_value, sort_order, is_active, deleted_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (id_val, title_val, desc_val, image_url_val, target_type_val, target_value_val, sort_order_val, is_active_val, deleted_at_val, created_at_val, updated_at_val))
 
         # 创建索引
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_recommendations_type ON recommendation_images(type)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_recommendations_target_type ON recommendation_images(target_type)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_recommendations_target_value ON recommendation_images(target_value)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_recommendations_active ON recommendation_images(is_active)")
 
         # 删除旧表
@@ -97,11 +105,11 @@ def migrate_database():
         print("数据库迁移成功！")
 
         # 显示迁移后的数据
-        cursor.execute("SELECT id, title, type, sort_order FROM recommendation_images")
+        cursor.execute("SELECT id, title, target_type, target_value, sort_order FROM recommendation_images")
         rows = cursor.fetchall()
         print(f"\n迁移后共有 {len(rows)} 条推荐图记录:")
         for row in rows:
-            print(f"  - {row[1]} (type: {row[2]}, order: {row[3]})")
+            print(f"  - {row[1]} (target: {row[2]}/{row[3]}, order: {row[4]})")
 
     except Exception as e:
         conn.rollback()

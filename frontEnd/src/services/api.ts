@@ -33,21 +33,28 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 // 获取配饰推荐列表
-export async function getAccessories(): Promise<ApiResponse<RecommendationImage[]>> {
-  const response = await fetch(`${API_BASE}/presets/accessories`)
+export async function getAccessories(accessoryType: string = 'bracelet'): Promise<ApiResponse<RecommendationImage[]>> {
+  const params = new URLSearchParams()
+  params.set('target_type', 'accessory')
+  params.set('target_value', accessoryType)
+  const response = await fetch(`${API_BASE}/presets/recommendations?${params.toString()}`)
   return handleResponse<ApiResponse<RecommendationImage[]>>(response)
 }
 
 // 获取模特推荐列表
-export async function getModels(): Promise<ApiResponse<RecommendationImage[]>> {
-  const response = await fetch(`${API_BASE}/presets/models`)
+export async function getModels(modelCategory: string = 'wrist'): Promise<ApiResponse<RecommendationImage[]>> {
+  const params = new URLSearchParams()
+  params.set('target_type', 'model')
+  params.set('target_value', modelCategory)
+  const response = await fetch(`${API_BASE}/presets/recommendations?${params.toString()}`)
   return handleResponse<ApiResponse<RecommendationImage[]>>(response)
 }
 
 // 获取推荐图列表
-export async function getRecommendations(type?: string): Promise<ApiResponse<RecommendationImage[]>> {
+export async function getRecommendations(targetType?: string, targetValue?: string): Promise<ApiResponse<RecommendationImage[]>> {
   const params = new URLSearchParams()
-  if (type) params.set('type', type)
+  if (targetType) params.set('target_type', targetType)
+  if (targetValue) params.set('target_value', targetValue)
   const query = params.toString() ? `?${params.toString()}` : ''
   const response = await fetch(`${API_BASE}/presets/recommendations${query}`)
   return handleResponse<ApiResponse<RecommendationImage[]>>(response)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Literal
 import json
 
 from app.database import get_db
@@ -243,21 +243,31 @@ def toggle_user_active(
 
 @router.get("/recommendations", response_model=ApiResponse[PaginatedResponse[RecommendationResponse]])
 def get_recommendations(
-    params: RecommendationListParams = Depends(),
+    page: int = 1,
+    page_size: int = 20,
+    target_type: Optional[str] = None,
+    target_value: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    sort_order: Literal["asc", "desc"] = "desc",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
     """获取推荐图列表"""
     query = db.query(RecommendationImage).filter(RecommendationImage.deleted_at.is_(None))
 
-    if params.type:
-        query = query.filter(RecommendationImage.type == params.type)
+    if target_type:
+        query = query.filter(RecommendationImage.target_type == target_type)
 
-    if params.is_active is not None:
-        query = query.filter(RecommendationImage.is_active == params.is_active)
+    if target_value:
+        query = query.filter(RecommendationImage.target_value == target_value)
 
-    if params.search:
-        search_term = f"%{params.search}%"
+    if is_active is not None:
+        query = query.filter(RecommendationImage.is_active == is_active)
+
+    if search:
+        search_term = f"%{search}%"
         query = query.filter(
             (RecommendationImage.title.ilike(search_term)) | (RecommendationImage.description.ilike(search_term))
         )
@@ -265,15 +275,15 @@ def get_recommendations(
     query = query.order_by(RecommendationImage.sort_order.asc(), RecommendationImage.created_at.desc())
 
     total = query.count()
-    offset = (params.page - 1) * params.page_size
-    items = query.offset(offset).limit(params.page_size).all()
+    offset = (page - 1) * page_size
+    items = query.offset(offset).limit(page_size).all()
 
     return ApiResponse(data=PaginatedResponse(
         items=[RecommendationResponse.model_validate(r) for r in items],
         total=total,
-        page=params.page,
-        page_size=params.page_size,
-        total_pages=(total + params.page_size - 1) // params.page_size
+        page=page,
+        page_size=page_size,
+        total_pages=(total + page_size - 1) // page_size
     ))
 
 
@@ -302,7 +312,8 @@ def create_recommendation(
         title=req.title,
         description=req.description,
         image_url=req.image_url,
-        type=req.type,
+        target_type=req.target_type,
+        target_value=req.target_value,
         sort_order=req.sort_order,
         is_active=req.is_active
     )
@@ -374,7 +385,8 @@ def move_recommendation_up(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="推荐图不存在")
 
     prev_rec = db.query(RecommendationImage).filter(
-        RecommendationImage.type == rec.type,
+        RecommendationImage.target_type == rec.target_type,
+        RecommendationImage.target_value == rec.target_value,
         RecommendationImage.sort_order < rec.sort_order,
         RecommendationImage.deleted_at.is_(None)
     ).order_by(RecommendationImage.sort_order.desc()).first()
@@ -401,7 +413,8 @@ def move_recommendation_down(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="推荐图不存在")
 
     next_rec = db.query(RecommendationImage).filter(
-        RecommendationImage.type == rec.type,
+        RecommendationImage.target_type == rec.target_type,
+        RecommendationImage.target_value == rec.target_value,
         RecommendationImage.sort_order > rec.sort_order,
         RecommendationImage.deleted_at.is_(None)
     ).order_by(RecommendationImage.sort_order.asc()).first()

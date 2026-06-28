@@ -76,7 +76,8 @@ export function ModelPanel({
     const fetchPresets = async () => {
       setLoading(true)
       try {
-        const response = await getModels()
+        // 目前默认使用 wrist 分类的模特推荐
+        const response = await getModels('wrist')
         if (response.success && response.data) {
           setPresets(response.data)
         }

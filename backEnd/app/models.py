@@ -119,34 +119,14 @@ class RecommendationImage(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=False)
-    type = Column(String(50), nullable=False, index=True)  # "accessory" 或 "model"
+    # 推荐图关联目标：对于配饰是配饰类型（如 "bracelet"）；对于模特是模特分类（如 "wrist"）
+    target_type = Column(String(50), nullable=False, index=True)  # "accessory" 或 "model"
+    target_value = Column(String(50), nullable=False, index=True)  # 具体类型/分类值
     sort_order = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
     deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-
-class PresetAccessory(Base):
-    __tablename__ = "preset_accessories"
-
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    type = Column(String(50), nullable=False, index=True)
-    name = Column(String(100), nullable=False)
-    image_url = Column(String(500), nullable=False)
-    sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-class PresetModel(Base):
-    __tablename__ = "preset_models"
-
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    category = Column(String(50), nullable=False, index=True)
-    name = Column(String(100), nullable=False)
-    image_url = Column(String(500), nullable=False)
-    sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class PresetScene(Base):

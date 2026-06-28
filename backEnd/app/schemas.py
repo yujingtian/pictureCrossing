@@ -369,7 +369,8 @@ class RecommendationCreateRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     image_url: str = Field(..., max_length=500)
-    type: str = Field(..., pattern="^(accessory|model)$")
+    target_type: str = Field(..., pattern="^(accessory|model)$")
+    target_value: str = Field(..., min_length=1, max_length=50)
     sort_order: int = 0
     is_active: bool = True
 
@@ -378,7 +379,8 @@ class RecommendationUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     image_url: Optional[str] = Field(None, max_length=500)
-    type: Optional[str] = Field(None, pattern="^(accessory|model)$")
+    target_type: Optional[str] = Field(None, pattern="^(accessory|model)$")
+    target_value: Optional[str] = Field(None, min_length=1, max_length=50)
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -388,7 +390,8 @@ class RecommendationResponse(CamelCaseBase):
     title: str
     description: Optional[str]
     image_url: str
-    type: str
+    target_type: str
+    target_value: str
     sort_order: int
     is_active: bool
     created_at: datetime
@@ -402,6 +405,7 @@ class RecommendationResponse(CamelCaseBase):
 
 
 class RecommendationListParams(PaginationParams, SortParams):
-    type: Optional[str] = None
+    target_type: Optional[str] = None
+    target_value: Optional[str] = None
     is_active: Optional[bool] = None
     search: Optional[str] = None

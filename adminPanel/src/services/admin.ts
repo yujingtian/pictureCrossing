@@ -98,13 +98,15 @@ export async function updateUserQuota(id: string, quotaTotal: number): Promise<a
 export async function getRecommendations(params?: {
   page?: number
   pageSize?: number
-  position?: string
+  targetType?: string
+  targetValue?: string
   search?: string
 }): Promise<any> {
   const searchParams = new URLSearchParams()
   if (params?.page) searchParams.set('page', params.page.toString())
   if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString())
-  if (params?.position) searchParams.set('position', params.position)
+  if (params?.targetType) searchParams.set('target_type', params.targetType)
+  if (params?.targetValue) searchParams.set('target_value', params.targetValue)
   if (params?.search) searchParams.set('search', params.search)
 
   const query = searchParams.toString() ? `?${searchParams.toString()}` : ''
@@ -119,17 +121,25 @@ export async function createRecommendation(data: {
   title: string
   description?: string
   imageUrl: string
-  position: string
-  accessoryType?: string
+  targetType: string
+  targetValue: string
   sortOrder: number
   isActive: boolean
-  linkType?: string
-  linkTarget?: string
 }): Promise<any> {
+  // 转换为后端的 snake_case
+  const backendData = {
+    title: data.title,
+    description: data.description,
+    image_url: data.imageUrl,
+    target_type: data.targetType,
+    target_value: data.targetValue,
+    sort_order: data.sortOrder,
+    is_active: data.isActive,
+  }
   return request('/recommendations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   })
 }
 
@@ -137,17 +147,25 @@ export async function updateRecommendation(id: string, data: {
   title?: string
   description?: string
   imageUrl?: string
-  position?: string
-  accessoryType?: string
+  targetType?: string
+  targetValue?: string
   sortOrder?: number
   isActive?: boolean
-  linkType?: string
-  linkTarget?: string
 }): Promise<any> {
+  // 转换为后端的 snake_case
+  const backendData: any = {}
+  if (data.title !== undefined) backendData.title = data.title
+  if (data.description !== undefined) backendData.description = data.description
+  if (data.imageUrl !== undefined) backendData.image_url = data.imageUrl
+  if (data.targetType !== undefined) backendData.target_type = data.targetType
+  if (data.targetValue !== undefined) backendData.target_value = data.targetValue
+  if (data.sortOrder !== undefined) backendData.sort_order = data.sortOrder
+  if (data.isActive !== undefined) backendData.is_active = data.isActive
+
   return request(`/recommendations/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   })
 }
 

@@ -92,7 +92,7 @@ export function AccessoryPanel({
     const fetchPresets = async () => {
       setLoading(true)
       try {
-        const response = await getAccessories()
+        const response = await getAccessories(currentType)
         if (response.success && response.data) {
           setPresets(response.data)
         }
@@ -108,7 +108,7 @@ export function AccessoryPanel({
       }
     }
     fetchPresets()
-  }, [open, toast])
+  }, [open, toast, currentType])
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>

@@ -3,27 +3,6 @@ export type UploadType = 'accessory' | 'model' | 'mask'
 export type AccessoryType = 'bracelet'
 export type GenerationTaskStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'not_found'
 
-export interface AccessoryResponse {
-  id: string
-  type: string
-  name: string
-  imageUrl: string
-}
-
-export interface ModelResponse {
-  id: string
-  category: string
-  name: string
-  imageUrl: string
-}
-
-export interface SceneResponse {
-  id: string
-  category: string
-  name: string
-  imageUrl: string
-}
-
 export interface UploadResponse {
   fileId: string
   url: string
@@ -92,7 +71,8 @@ export interface RecommendationImage {
   title: string
   description?: string
   imageUrl: string
-  type: 'accessory' | 'model'
+  targetType: 'accessory' | 'model'
+  targetValue: string
   sortOrder: number
   isActive: boolean
   createdAt: string

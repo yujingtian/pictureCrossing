@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import PresetAccessory, PresetModel, PresetScene, User, UserRole, RecommendationImage
+from app.models import PresetScene, User, UserRole, RecommendationImage
 from app.core.security import get_password_hash
 from app.core.security import save_password_to_history
 
@@ -14,38 +14,6 @@ settings = get_settings()
 
 
 DEFAULT_DATA = {
-    "accessories": [
-        {
-            "id": "bracelet_001",
-            "type": "bracelet",
-            "name": "经典珍珠手链",
-            "image_url": "/static/presets/bracelet_001.png",
-            "sort_order": 1
-        },
-        {
-            "id": "bracelet_002",
-            "type": "bracelet",
-            "name": "金色链条手链",
-            "image_url": "/static/presets/bracelet_002.png",
-            "sort_order": 2
-        }
-    ],
-    "models": [
-        {
-            "id": "wrist_001",
-            "category": "wrist",
-            "name": "优雅手腕",
-            "image_url": "/static/presets/wrist_001.png",
-            "sort_order": 1
-        },
-        {
-            "id": "wrist_002",
-            "category": "wrist",
-            "name": "时尚手腕",
-            "image_url": "/static/presets/wrist_002.png",
-            "sort_order": 2
-        }
-    ],
     "scenes": [
         {
             "id": "scene_studio",
@@ -66,38 +34,42 @@ DEFAULT_DATA = {
     ],
     "recommendations": [
         {
-            "id": "rec_accessory_001",
+            "id": "bracelet_001",
             "title": "珍珠手链",
             "description": "优雅珍珠手链推荐",
             "image_url": "/static/presets/bracelet_001.png",
-            "type": "accessory",
+            "target_type": "accessory",
+            "target_value": "bracelet",
             "sort_order": 1,
             "is_active": True
         },
         {
-            "id": "rec_accessory_002",
+            "id": "bracelet_002",
             "title": "金色手链",
             "description": "时尚金色手链推荐",
             "image_url": "/static/presets/bracelet_002.png",
-            "type": "accessory",
+            "target_type": "accessory",
+            "target_value": "bracelet",
             "sort_order": 2,
             "is_active": True
         },
         {
-            "id": "rec_model_001",
+            "id": "wrist_001",
             "title": "优雅手腕",
             "description": "优雅模特手腕展示",
             "image_url": "/static/presets/wrist_001.png",
-            "type": "model",
+            "target_type": "model",
+            "target_value": "wrist",
             "sort_order": 1,
             "is_active": True
         },
         {
-            "id": "rec_model_002",
+            "id": "wrist_002",
             "title": "时尚手腕",
             "description": "时尚模特手腕展示",
             "image_url": "/static/presets/wrist_002.png",
-            "type": "model",
+            "target_type": "model",
+            "target_value": "wrist",
             "sort_order": 2,
             "is_active": True
         }
@@ -175,12 +147,6 @@ def ensure_initial_data():
 
     db = SessionLocal()
     try:
-        for acc_data in DEFAULT_DATA["accessories"]:
-            _upsert(db, PresetAccessory, acc_data)
-
-        for model_data in DEFAULT_DATA["models"]:
-            _upsert(db, PresetModel, model_data)
-
         for scene_data in DEFAULT_DATA["scenes"]:
             _upsert(db, PresetScene, scene_data)
 

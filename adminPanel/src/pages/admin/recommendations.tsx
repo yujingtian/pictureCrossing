@@ -39,12 +39,10 @@ interface Recommendation {
   title: string
   description?: string
   imageUrl: string
-  position: string
-  accessoryType?: string
+  targetType: string
+  targetValue: string
   sortOrder: number
   isActive: boolean
-  linkType?: string
-  linkTarget?: string
   createdAt: string
   updatedAt: string
 }
@@ -68,7 +66,7 @@ export function AdminRecommendations() {
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [position, setPosition] = useState<string | undefined>(undefined)
+  const [targetType, setTargetType] = useState<string | undefined>(undefined)
   const [createDialog, setCreateDialog] = useState<CreateDialogState>({ open: false })
   const [editDialog, setEditDialog] = useState<EditDialogState>({ open: false, recommendation: null })
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({ open: false, recommendation: null })
@@ -80,7 +78,7 @@ export function AdminRecommendations() {
   async function fetchRecommendations() {
     setIsLoading(true)
     try {
-      const response = await getRecommendations({ page, pageSize, position: position || undefined })
+      const response = await getRecommendations({ page, pageSize, targetType: targetType || undefined })
       if (response.success && response.data) {
         setRecommendations(response.data.items)
         setTotal(response.data.total)
@@ -94,18 +92,16 @@ export function AdminRecommendations() {
 
   useEffect(() => {
     fetchRecommendations()
-  }, [page, position])
+  }, [page, targetType])
 
   async function handleCreate(data: {
     title: string
     description?: string
     imageUrl: string
-    position: string
-    accessoryType?: string
+    targetType: string
+    targetValue: string
     sortOrder: number
     isActive: boolean
-    linkType?: string
-    linkTarget?: string
   }) {
     setIsSaving(true)
     try {
@@ -126,12 +122,10 @@ export function AdminRecommendations() {
     title?: string
     description?: string
     imageUrl?: string
-    position?: string
-    accessoryType?: string
+    targetType?: string
+    targetValue?: string
     sortOrder?: number
     isActive?: boolean
-    linkType?: string
-    linkTarget?: string
   }) {
     if (!editDialog.recommendation) return
 
@@ -192,18 +186,28 @@ export function AdminRecommendations() {
     }
   }
 
+  function getTargetDisplay(rec: Recommendation) {
+    if (rec.targetType === 'accessory') {
+      return `配饰: ${rec.targetValue}`
+    } else if (rec.targetType === 'model') {
+      return `模特: ${rec.targetValue}`
+    }
+    return `${rec.targetType}/${rec.targetValue}`
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">推荐图管理</h2>
         <div className="flex items-center gap-4">
-          <Select value={position} onValueChange={(val) => setPosition(val === 'all' ? undefined : val)}>
+          <Select value={targetType} onValueChange={(val) => setTargetType(val === 'all' ? undefined : val)}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="全部位置" />
+              <SelectValue placeholder="全部类型" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部位置</SelectItem>
-              <SelectItem value="home">首页</SelectItem>
+              <SelectItem value="all">全部类型</SelectItem>
+              <SelectItem value="accessory">配饰推荐</SelectItem>
+              <SelectItem value="model">模特推荐</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateDialog({ open: true })}>
@@ -254,7 +258,7 @@ export function AdminRecommendations() {
                 <CardContent className="pb-2">
                   <div className="text-xs text-gray-500 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span>位置：{rec.position}</span>
+                      <span>目标：{getTargetDisplay(rec)}</span>
                       <span>排序：{rec.sortOrder}</span>
                     </div>
                   </div>
@@ -372,12 +376,10 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-  const [position, setPosition] = useState('home')
-  const [accessoryType, setAccessoryType] = useState<string | undefined>(undefined)
+  const [targetType, setTargetType] = useState('accessory')
+  const [targetValue, setTargetValue] = useState('bracelet')
   const [sortOrder, setSortOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
-  const [linkType, setLinkType] = useState('')
-  const [linkTarget, setLinkTarget] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -389,37 +391,40 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
         setTitle(recommendation.title)
         setDescription(recommendation.description || '')
         setImageUrl(recommendation.imageUrl)
-        setPosition(recommendation.position)
-        setAccessoryType(recommendation.accessoryType || undefined)
+        setTargetType(recommendation.targetType)
+        setTargetValue(recommendation.targetValue)
         setSortOrder(recommendation.sortOrder.toString())
         setIsActive(recommendation.isActive)
-        setLinkType(recommendation.linkType || '')
-        setLinkTarget(recommendation.linkTarget || '')
       } else {
         setTitle('')
         setDescription('')
         setImageUrl('')
-        setPosition('home')
-        setAccessoryType(undefined)
+        setTargetType('accessory')
+        setTargetValue('bracelet')
         setSortOrder('0')
         setIsActive(true)
-        setLinkType('')
-        setLinkTarget('')
       }
     }
   }, [open, recommendation])
+
+  // 当 targetType 变化时，更新 targetValue 的默认值
+  useEffect(() => {
+    if (targetType === 'accessory' && !isEdit) {
+      setTargetValue('bracelet')
+    } else if (targetType === 'model' && !isEdit) {
+      setTargetValue('wrist')
+    }
+  }, [targetType, isEdit])
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setTitle('')
       setDescription('')
       setImageUrl('')
-      setPosition('home')
-      setAccessoryType(undefined)
+      setTargetType('accessory')
+      setTargetValue('bracelet')
       setSortOrder('0')
       setIsActive(true)
-      setLinkType('')
-      setLinkTarget('')
     }
     onOpenChange(open)
   }
@@ -459,11 +464,16 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
       toast.error('请上传或输入图片地址')
       return
     }
+    if (!targetValue.trim()) {
+      toast.error('请输入目标值')
+      return
+    }
 
     const data: any = {
       title: title.trim(),
       imageUrl: imageUrl.trim(),
-      position,
+      targetType,
+      targetValue: targetValue.trim(),
       sortOrder: sortOrderNum,
       isActive,
     }
@@ -471,20 +481,11 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
     if (description.trim()) {
       data.description = description.trim()
     }
-    if (accessoryType && accessoryType !== 'none') {
-      data.accessoryType = accessoryType
-    }
-    if (linkType.trim()) {
-      data.linkType = linkType.trim()
-    }
-    if (linkTarget.trim()) {
-      data.linkTarget = linkTarget.trim()
-    }
 
     await onSave(data)
   }
 
-  const isValid = title.trim() && imageUrl.trim() && !isNaN(parseInt(sortOrder, 10)) && parseInt(sortOrder, 10) >= 0
+  const isValid = title.trim() && imageUrl.trim() && targetValue.trim() && !isNaN(parseInt(sortOrder, 10)) && parseInt(sortOrder, 10) >= 0
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -572,63 +573,39 @@ function RecommendationFormDialog({ open, recommendation, isSaving, onOpenChange
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="position">位置</Label>
-              <Select value={position} onValueChange={setPosition}>
-                <SelectTrigger id="position">
+              <Label htmlFor="targetType">目标类型</Label>
+              <Select value={targetType} onValueChange={setTargetType}>
+                <SelectTrigger id="targetType">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="home">首页</SelectItem>
+                  <SelectItem value="accessory">配饰推荐</SelectItem>
+                  <SelectItem value="model">模特推荐</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sortOrder">排序</Label>
+              <Label htmlFor="targetValue">目标值</Label>
               <Input
-                id="sortOrder"
-                type="number"
-                min="0"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                placeholder="排序值"
+                id="targetValue"
+                value={targetValue}
+                onChange={(e) => setTargetValue(e.target.value)}
+                placeholder={targetType === 'accessory' ? '如: bracelet' : '如: wrist'}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="accessoryType">配饰类型</Label>
-            <Select value={accessoryType} onValueChange={(val) => setAccessoryType(val === 'none' ? undefined : val)}>
-              <SelectTrigger id="accessoryType">
-                <SelectValue placeholder="选择配饰类型（可选）" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">无</SelectItem>
-                <SelectItem value="bracelet">手链</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="linkType">链接类型</Label>
-              <Input
-                id="linkType"
-                value={linkType}
-                onChange={(e) => setLinkType(e.target.value)}
-                placeholder="可选"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="linkTarget">链接目标</Label>
-              <Input
-                id="linkTarget"
-                value={linkTarget}
-                onChange={(e) => setLinkTarget(e.target.value)}
-                placeholder="可选"
-              />
-            </div>
+            <Label htmlFor="sortOrder">排序</Label>
+            <Input
+              id="sortOrder"
+              type="number"
+              min="0"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              placeholder="排序值"
+            />
           </div>
 
           <div className="flex items-center justify-between">
