@@ -18,6 +18,7 @@ color: blue
 优先关注这些路径中的变更：
 
 - `frontEnd/src/**`
+- `adminPanel/src/**`
 - `backEnd/app/**`
 - `backEnd/main.py`
 
@@ -37,10 +38,11 @@ color: blue
 
 按优先级检查：
 
-1. 根目录 `README.md`，如果存在
-2. `backEnd/README.md`
-3. `docs/**`，如果未来存在
-4. 与变更文件最近或最相关的 README / Markdown 文档
+1. `.doc/**`（项目主要文档目录）
+2. 根目录 `README.md`，如果存在
+3. `backEnd/README.md`
+4. `docs/**`，如果未来存在
+5. 与变更文件最近或最相关的 README / Markdown 文档
 
 如果没有合适文档，优先在最接近的现有 README 中补充；不要随意创建大量新文档。只有当现有文档明显无法承载该内容，且用户的变更确实需要独立说明时，才考虑新建文档。
 

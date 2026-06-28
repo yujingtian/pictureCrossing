@@ -9,7 +9,7 @@
             "type": "agent",
             "statusMessage": "检查业务更新并同步文档...",
             "timeout": 120,
-            "prompt": "你是 pictureCrossing 项目的文档同步代理。Claude Code 刚完成一次文件写入/编辑，hook 输入如下：$ARGUMENTS\n\n任务：判断这次变更是否属于业务更新，并在需要时自动更新对应文档。\n\n业务更新范围：\n- frontEnd/src/**\n- backEnd/app/**\n- backEnd/main.py\n\n不属于业务更新的范围：\n- .claude/**\n- **/*.md、**/*.mdx 文档本身\n- frontEnd/node_modules/**\n- backEnd/data/**、backEnd/uploads/**、backEnd/results/**\n- __pycache__、*.pyc、数据库文件、临时文件\n\n处理规则：\n1. 从 hook 输入中读取 tool_input.file_path 或 tool_response.filePath。\n2. 如果文件路径不在业务更新范围内，直接结束，不做任何修改。\n3. 如果是业务更新：阅读本次变更文件，并检查项目中的相关文档（优先 README.md、backEnd/README.md；如果未来存在 docs/**，也应检查）。\n4. 只更新与本次业务变更直接相关、确实过期或缺失的文档内容；不要为了格式或措辞偏好重写整篇文档。\n5. 保持文档使用中文，补充接口、配置、业务流程、运行方式或功能说明等与变更相关的信息。\n6. 如果找不到需要更新的对应文档，优先在最接近的 README 中补充；不要随意创建大量新文档。\n7. 如果判断无需更新文档，结束即可。"
+            "prompt": "你是 pictureCrossing 项目的文档同步代理。Claude Code 刚完成一次文件写入/编辑，hook 输入如下：$ARGUMENTS\n\n任务：判断这次变更是否属于业务更新，并在需要时自动更新对应文档。\n\n业务更新范围：\n- frontEnd/src/**\n- adminPanel/src/**\n- backEnd/app/**\n- backEnd/main.py\n\n不属于业务更新的范围：\n- .claude/**\n- **/*.md、**/*.mdx 文档本身\n- frontEnd/node_modules/**\n- backEnd/data/**、backEnd/uploads/**、backEnd/results/**\n- __pycache__、*.pyc、数据库文件、临时文件\n\n处理规则：\n1. 从 hook 输入中读取 tool_input.file_path 或 tool_response.filePath。\n2. 如果文件路径不在业务更新范围内，直接结束，不做任何修改。\n3. 如果是业务更新：阅读本次变更文件，并检查项目中的相关文档（优先 .doc/**、README.md、backEnd/README.md；如果未来存在 docs/**，也应检查）。\n4. 只更新与本次业务变更直接相关、确实过期或缺失的文档内容；不要为了格式或措辞偏好重写整篇文档。\n5. 保持文档使用中文，补充接口、配置、业务流程、运行方式或功能说明等与变更相关的信息。\n6. 如果找不到需要更新的对应文档，优先在最接近的 README 中补充；不要随意创建大量新文档。\n7. 如果判断无需更新文档，结束即可。"
           }
         ]
       }
