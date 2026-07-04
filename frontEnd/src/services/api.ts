@@ -10,6 +10,44 @@ import { getAccessToken } from '@/utils/storage'
 
 const API_BASE = '/api'
 
+// ==================== 类型转换工具函数 ====================
+
+/**
+ * 将对象的键从 snake_case 转换为 camelCase
+ */
+function snakeToCamel<T>(obj: any): T {
+  if (Array.isArray(obj)) {
+    return obj.map(snakeToCamel) as T
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+      acc[camelKey as keyof T] = snakeToCamel(obj[key])
+      return acc
+    }, {} as T)
+  }
+  return obj
+}
+
+/**
+ * 将对象的键从 camelCase 转换为 snake_case
+ */
+function camelToSnake(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(camelToSnake)
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const snakeKey = key.replace(/([A-Z])/g, (_, c) => '_' + c.toLowerCase())
+      acc[snakeKey] = camelToSnake(obj[key])
+      return acc
+    }, {} as any)
+  }
+  return obj
+}
+
+// ==================== API 请求基础函数 ====================
+
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken()
   const headers = new Headers(options.headers || {})
@@ -29,8 +67,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new Error(data.message || data.error || `HTTP ${response.status}`)
   }
 
-  return data
+  // 自动将响应数据转换为 camelCase
+  return snakeToCamel(data)
 }
+
+// ==================== API 接口 ====================
 
 // 获取配饰推荐列表
 export async function getAccessories(accessoryType: string = 'bracelet'): Promise<ApiResponse<RecommendationImage[]>> {
@@ -76,20 +117,8 @@ export async function uploadImage(file: File, type: string): Promise<ApiResponse
 
 // 创建生成任务
 export async function createGeneration(request: CreateGenerationRequest): Promise<ApiResponse<CreateGenerationResponse>> {
-  // 转换为后端期望的蛇形命名
-  const backendRequest = {
-    accessory_type: request.accessoryType,
-    accessory: request.accessory,
-    model: request.model.maskUrl ? { ...request.model, mask_url: request.model.maskUrl } : request.model,
-    scene: request.scene,
-    options: request.options ? {
-      lighting: request.options.lighting,
-      prompt: request.options.prompt,
-      negative_prompt: (request.options as any).negativePrompt,
-      strength: request.options.strength,
-      guidance_scale: request.options.guidanceScale
-    } : undefined
-  }
+  // 转换为后端期望的 snake_case
+  const backendRequest = camelToSnake(request)
 
   const response = await fetchWithAuth(`${API_BASE}/generate`, {
     method: 'POST',
@@ -97,40 +126,11 @@ export async function createGeneration(request: CreateGenerationRequest): Promis
     body: JSON.stringify(backendRequest)
   })
 
-  const data = await handleResponse<ApiResponse<any>>(response)
-
-  // 转换回驼峰命名
-  if (data.success && data.data) {
-    return {
-      ...data,
-      data: {
-        taskId: data.data.task_id,
-        status: data.data.status
-      }
-    }
-  }
-
-  return data as ApiResponse<CreateGenerationResponse>
+  return handleResponse<ApiResponse<CreateGenerationResponse>>(response)
 }
 
 // 获取任务状态
 export async function getTaskStatus(taskId: string): Promise<ApiResponse<TaskStatusResponse>> {
   const response = await fetchWithAuth(`${API_BASE}/generate/${taskId}`)
-  const data = await handleResponse<ApiResponse<any>>(response)
-
-  // 转换为驼峰命名
-  if (data.success && data.data) {
-    return {
-      ...data,
-      data: {
-        taskId: data.data.task_id,
-        status: data.data.status,
-        progress: data.data.progress,
-        resultUrl: data.data.result_url,
-        error: data.data.error
-      }
-    }
-  }
-
-  return data as ApiResponse<TaskStatusResponse>
+  return handleResponse<ApiResponse<TaskStatusResponse>>(response)
 }

@@ -8,6 +8,11 @@ import type { AccessoryInput, AccessoryType, ModelInput } from '@/types/api'
 import { createGeneration, getTaskStatus } from '@/services/api'
 import { useToast } from '@/hooks/use-toast'
 
+// 常量定义
+const TASK_POLL_INTERVAL = 1500 // 毫秒
+const TASK_MAX_POLLS = 80 // 大约 2 分钟
+const TASK_MAX_ERROR_RETRIES = 3 // 允许的连续错误次数
+
 export default function App() {
   const { toast } = useToast()
   // 面板状态
@@ -74,7 +79,7 @@ export default function App() {
     try {
       // 调用创建任务接口
       const response = await createGeneration({
-        accessory_type: selectedAccessoryType,
+        accessoryType: selectedAccessoryType,
         accessory: selectedAccessory,
         model: selectedModel,
       })
@@ -87,11 +92,14 @@ export default function App() {
 
       // 开始轮询任务状态
       let pollCount = 0
-      const maxPolls = 80 // 大约 2 分钟
+      let consecutiveErrorCount = 0
 
       pollIntervalRef.current = setInterval(async () => {
         try {
           const pollResponse = await getTaskStatus(newTaskId)
+
+          // 成功请求，重置错误计数
+          consecutiveErrorCount = 0
 
           if (pollResponse.success && pollResponse.data) {
             const taskStatus = pollResponse.data
@@ -116,7 +124,7 @@ export default function App() {
           }
 
           pollCount++
-          if (pollCount >= maxPolls) {
+          if (pollCount >= TASK_MAX_POLLS) {
             setIsLoading(false)
             clearPolling()
             toast({
@@ -127,15 +135,20 @@ export default function App() {
           }
         } catch (error) {
           console.error('轮询任务状态失败', error)
-          setIsLoading(false)
-          clearPolling()
-          toast({
-            title: '获取任务状态失败',
-            description: error instanceof Error ? error.message : '请稍后重试',
-            variant: 'destructive',
-          })
+          consecutiveErrorCount++
+
+          // 只有连续错误超过阈值才停止轮询
+          if (consecutiveErrorCount >= TASK_MAX_ERROR_RETRIES) {
+            setIsLoading(false)
+            clearPolling()
+            toast({
+              title: '获取任务状态失败',
+              description: error instanceof Error ? error.message : '请稍后重试',
+              variant: 'destructive',
+            })
+          }
         }
-      }, 1500)
+      }, TASK_POLL_INTERVAL)
 
     } catch (error) {
       console.error('生成失败', error)

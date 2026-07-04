@@ -3,6 +3,44 @@ import { getAccessToken, removeAccessToken, clearAuth } from '@/utils/storage'
 const API_BASE = '/api/admin'
 const API_UPLOAD = '/api/upload'
 
+// ==================== 类型转换工具函数 ====================
+
+/**
+ * 将对象的键从 snake_case 转换为 camelCase
+ */
+function snakeToCamel<T>(obj: any): T {
+  if (Array.isArray(obj)) {
+    return obj.map(snakeToCamel) as T
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+      acc[camelKey as keyof T] = snakeToCamel(obj[key])
+      return acc
+    }, {} as T)
+  }
+  return obj
+}
+
+/**
+ * 将对象的键从 camelCase 转换为 snake_case
+ */
+function camelToSnake(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(camelToSnake)
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const snakeKey = key.replace(/([A-Z])/g, (_, c) => '_' + c.toLowerCase())
+      acc[snakeKey] = camelToSnake(obj[key])
+      return acc
+    }, {} as any)
+  }
+  return obj
+}
+
+// ==================== API 请求基础函数 ====================
+
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getAccessToken()
   const headers = new Headers(options.headers || {})
@@ -32,8 +70,11 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     throw new Error(data.message || data.error || '请求失败')
   }
 
-  return data
+  // 自动将响应数据转换为 camelCase
+  return snakeToCamel(data)
 }
+
+// ==================== API 接口 ====================
 
 // 统计
 export async function getStats(): Promise<any> {
@@ -66,10 +107,11 @@ export async function createUser(data: {
   role: 'user' | 'admin'
   quotaTotal: number
 }): Promise<any> {
+  const backendData = camelToSnake(data)
   return request('/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   })
 }
 
@@ -79,10 +121,11 @@ export async function updateUser(id: string, data: {
   role?: 'user' | 'admin'
   isActive?: boolean
 }): Promise<any> {
+  const backendData = camelToSnake(data)
   return request(`/users/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(backendData),
   })
 }
 
@@ -126,16 +169,7 @@ export async function createRecommendation(data: {
   sortOrder: number
   isActive: boolean
 }): Promise<any> {
-  // 转换为后端的 snake_case
-  const backendData = {
-    title: data.title,
-    description: data.description,
-    image_url: data.imageUrl,
-    target_type: data.targetType,
-    target_value: data.targetValue,
-    sort_order: data.sortOrder,
-    is_active: data.isActive,
-  }
+  const backendData = camelToSnake(data)
   return request('/recommendations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -152,16 +186,7 @@ export async function updateRecommendation(id: string, data: {
   sortOrder?: number
   isActive?: boolean
 }): Promise<any> {
-  // 转换为后端的 snake_case
-  const backendData: any = {}
-  if (data.title !== undefined) backendData.title = data.title
-  if (data.description !== undefined) backendData.description = data.description
-  if (data.imageUrl !== undefined) backendData.image_url = data.imageUrl
-  if (data.targetType !== undefined) backendData.target_type = data.targetType
-  if (data.targetValue !== undefined) backendData.target_value = data.targetValue
-  if (data.sortOrder !== undefined) backendData.sort_order = data.sortOrder
-  if (data.isActive !== undefined) backendData.is_active = data.isActive
-
+  const backendData = camelToSnake(data)
   return request(`/recommendations/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -172,18 +197,6 @@ export async function updateRecommendation(id: string, data: {
 export async function deleteRecommendation(id: string): Promise<void> {
   return request(`/recommendations/${id}`, {
     method: 'DELETE',
-  })
-}
-
-export async function moveRecommendationUp(id: string): Promise<any> {
-  return request(`/recommendations/${id}/move-up`, {
-    method: 'POST',
-  })
-}
-
-export async function moveRecommendationDown(id: string): Promise<any> {
-  return request(`/recommendations/${id}/move-down`, {
-    method: 'POST',
   })
 }
 
@@ -211,5 +224,6 @@ export async function uploadImage(file: File, type: 'accessory' | 'model' | 'mas
     throw new Error(data.message || data.error || '上传失败')
   }
 
-  return data
+  // 自动将响应数据转换为 camelCase
+  return snakeToCamel(data)
 }

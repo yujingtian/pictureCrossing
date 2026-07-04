@@ -76,3 +76,11 @@ __v0_jsx-dev-runtime.ts
 
 # OS files
 Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/
+backEnd/uploads/
+backEnd/results/
