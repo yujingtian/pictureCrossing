@@ -46,6 +46,12 @@ AI_PROVIDER=mock
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_PER_MINUTE=5
 RATE_LIMIT_PER_DAY=50
+
+# 自动清理配置（可选）
+CLEANUP_ENABLED=true
+CLEANUP_INTERVAL_MINUTES=60
+UPLOAD_FILE_TTL_HOURS=24
+RESULT_FILE_TTL_HOURS=72
 ```
 
 ### AI_PROVIDER
@@ -283,6 +289,26 @@ rsp = MultiModalConversation.call(
 - 支持 JPEG/JPG/PNG/BMP/WEBP，MPO 图片会取首帧并转成 JPEG；
 - 会应用 EXIF 方向，避免手机照片上下颠倒；
 - 百炼返回的结果 URL 有效期有限，后端会立即下载并保存到 `results/`。
+
+## 自动清理
+
+为避免磁盘空间无限增长，后端内置了自动清理机制：
+
+- 上传图片默认保留 24 小时；
+- 生成结果默认保留 72 小时；
+- 每 60 分钟检查一次并删除过期文件；
+- 基于文件修改时间判断是否过期。
+
+可通过环境变量调整：
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `CLEANUP_ENABLED` | 是否启用自动清理 | `true` |
+| `CLEANUP_INTERVAL_MINUTES` | 清理检查间隔（分钟） | `60` |
+| `UPLOAD_FILE_TTL_HOURS` | 上传文件保留时长（小时） | `24` |
+| `RESULT_FILE_TTL_HOURS` | 结果文件保留时长（小时） | `72` |
+
+如需永久保存文件，设置 `CLEANUP_ENABLED=false` 即可。
 
 ## 任务队列说明
 
