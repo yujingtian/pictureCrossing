@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     static_dir: str = "./static"
     max_upload_size: int = 10 * 1024 * 1024
 
+    # 自动清理配置
+    cleanup_enabled: bool = True
+    cleanup_interval_minutes: int = 60
+    upload_file_ttl_hours: int = 24
+    result_file_ttl_hours: int = 72
+
     rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 5
     rate_limit_per_day: int = 50

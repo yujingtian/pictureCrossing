@@ -10,6 +10,7 @@ from app.database import init_db, reset_stuck_tasks
 from app.core import init_data
 from app.api import presets, upload, generate, auth, users, admin
 from app.services.rate_limiter import limiter
+from app.services.cleanup_service import get_cleanup_service
 
 settings = get_settings()
 
@@ -46,6 +47,16 @@ def on_startup():
     init_db()
     reset_stuck_tasks()
     init_data.ensure_initial_data()
+    # 启动自动清理服务
+    cleanup_service = get_cleanup_service()
+    cleanup_service.start()
+
+
+@app.on_event("shutdown")
+def on_shutdown():
+    # 停止自动清理服务
+    cleanup_service = get_cleanup_service()
+    cleanup_service.stop()
 
 
 @app.get("/")
